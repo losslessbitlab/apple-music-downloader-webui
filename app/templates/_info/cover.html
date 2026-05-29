@@ -1,0 +1,42 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        Cover-art options &mdash; what to pick
+    </summary>
+    <div class="mt-3 space-y-4 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Cover Size</h4>
+            <p>
+                Resolution requested from Apple (<code class="font-mono">{w}x{h}bb.jpg</code>). <code class="font-mono">5000x5000</code> is the maximum Apple actually serves; you'll usually get 3000&ndash;5000 back depending on the asset. Lower it (e.g. <code class="font-mono">1400x1400</code>) only if you embed art into AAC files and need to keep file size tight.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Cover Format</h4>
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-[12px]">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 text-left text-slate-600 dark:text-slate-400">
+                        <tr><th class="px-3 py-2 font-medium">Format</th><th class="px-3 py-2 font-medium">~MB</th><th class="px-3 py-2 font-medium">Why pick it</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr><td class="px-3 py-2 font-mono">jpg</td><td class="px-3 py-2">0.5&ndash;2</td><td class="px-3 py-2"><strong>Default.</strong> Best compatibility for embedding in m4a/flac. Lossy but visually indistinguishable from PNG at the artwork sizes Apple ships.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">png</td><td class="px-3 py-2">5&ndash;15</td><td class="px-3 py-2">Lossless. Costs ~10&times; the size for zero visible gain on artwork. Use only if your tagger normalises to PNG anyway.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">original</td><td class="px-3 py-2">varies</td><td class="px-3 py-2">Whatever Apple's CDN returns (usually JPG). Skips re-encoding entirely; useful for archival snapshots.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Embed vs Sidecar</h4>
+            <ul class="ml-5 list-disc space-y-1">
+                <li><strong>Embed Cover Art</strong> &mdash; writes the image into each audio file's metadata. Plays everywhere; survives moves.</li>
+                <li><strong>Save Artist Cover</strong> &mdash; drops <code class="font-mono">folder.jpg</code> + an artist hero alongside the audio. Plex / Jellyfin / Kodi all pick these up automatically.</li>
+                <li><strong>Save Animated Artwork</strong> &mdash; saves the short motion-poster MP4 Apple ships for some releases (mostly recent pop / hip-hop). Adds ~5&ndash;15 MB.</li>
+                <li><strong>Emby Animated Artwork</strong> &mdash; renames the file to Emby's expected pattern (<code class="font-mono">backdrop.mp4</code>) instead of Plex's. Toggle to match your media server.</li>
+            </ul>
+        </div>
+
+    </div>
+</details>

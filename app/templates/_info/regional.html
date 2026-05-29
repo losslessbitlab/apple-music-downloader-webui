@@ -1,0 +1,31 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        What goes in Language &amp; Storefront?
+    </summary>
+    <div class="mt-3 space-y-3 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+
+        <div class="flex items-start gap-2.5 rounded-lg border border-emerald-300/70 bg-emerald-50 p-3 text-[12px] leading-relaxed text-emerald-900 dark:border-emerald-700/40 dark:bg-emerald-500/10 dark:text-emerald-200">
+            <i data-lucide="check-circle-2" class="mt-0.5 h-4 w-4 shrink-0"></i>
+            <p><strong>Safe to leave both fields blank.</strong> The downloader auto-detects from the URLs you queue (every Apple Music URL embeds the storefront, e.g. <code class="font-mono">/ro/album/...</code> = Romania). Override only if you specifically want to force a different region.</p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Language</h4>
+            <p>
+                BCP-47 tag used for metadata strings (track titles, artist names, album notes) when Apple has translated versions. Common values: <code class="font-mono">en-US</code>, <code class="font-mono">en-GB</code>, <code class="font-mono">ja-JP</code>, <code class="font-mono">ro-RO</code>, <code class="font-mono">de-DE</code>. Leave blank to use the language Apple's metadata API serves your account by default.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Storefront</h4>
+            <p>
+                Two-letter ISO country code matching your subscription region: <code class="font-mono">us</code>, <code class="font-mono">jp</code>, <code class="font-mono">ca</code>, <code class="font-mono">ro</code>, <code class="font-mono">gb</code>, etc. Different storefronts can publish different masters / region-locked content. The downloader follows whatever storefront is in the URL, so this is only used as a fallback when a URL doesn't carry one.
+            </p>
+        </div>
+
+        <p class="text-[11.5px] text-slate-500 dark:text-slate-400">
+            <strong>Heads up:</strong> queueing a URL whose storefront doesn't match your subscription region usually still works for catalogue browsing, but downloads can fail with <em>Unavailable in your storefront</em>. If that happens, switch storefront here OR open the album in your own region's URL and queue that instead.
+        </p>
+    </div>
+</details>

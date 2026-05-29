@@ -1,0 +1,31 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        How the quality chain &amp; strict mode actually behave
+    </summary>
+    <div class="mt-3 space-y-3 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+        <p>
+            The chain is read left-to-right. The first sample rate the catalogued asset is published in <em>wins</em>; the rest of the list is fallback, never an upgrade path. So a chain of <code class="font-mono">48000, 44100, 96000, 192000</code> means:
+        </p>
+        <ol class="ml-5 list-decimal space-y-1">
+            <li>Try 48 kHz. If the album has it, download at 48 kHz and stop.</li>
+            <li>Otherwise try 44.1 kHz. If present, take that.</li>
+            <li>Only after those fail will it consider 96 kHz, then 192 kHz.</li>
+        </ol>
+        <p>
+            That's what you want 95% of the time: pin a sane ceiling and let oddball Hi-Res releases come in higher only if you have nothing lower. Put <code class="font-mono">192000</code> first only if disk space is free and you want the &quot;always grab the biggest&quot; behaviour.
+        </p>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Strict Mode</h4>
+            <p>
+                With Strict Mode <em>on</em>, the queue refuses to fall back past the first chain entry without an explicit confirm. Useful for &quot;I want 48 kHz or nothing, never let me silently get 44.1&quot; workflows. Off by default; most users prefer the silent fall-through.
+            </p>
+        </div>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Skip If Exists</h4>
+            <p>
+                Heuristic: if the destination folder already contains one or more audio files, the job is marked <em>skipped</em> instead of re-downloaded. Cheap idempotency for cron / repeated paste-the-same-URL flows. Skip-MV-split album jobs always force this off &mdash; they need to add new audio tracks alongside whatever's already there.
+            </p>
+        </div>
+    </div>
+</details>

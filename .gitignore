@@ -1,0 +1,45 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local virtual environment
+.venv/
+venv/
+env/
+
+# Runtime downloads and generated tools
+apple-music-downloader/
+wrapper/
+bento4/
+go*.linux-amd64.tar.gz
+wrapper.x86_64.zip
+
+# Runtime state, credentials, and local config artifacts
+firstrun
+.instance.lock
+.credentials
+config-backups/
+
+# Common local download folders if users point output at the project root
+AM-DL downloads/
+AM-DL-AAC downloads/
+AM-DL-Atmos downloads/
+
+# Archives and temporary packaging files
+*.tar.gz
+*.zip
+_smoketest_*.py
+_diff_*.txt
+_working_ref/
+_amd_main.go
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

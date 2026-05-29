@@ -1,475 +1,2367 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Apple Music Downloader</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-</head>
-<body class="bg-dark text-light">
 
-<div class="container-fluid p-3">
-    <!-- Title Section -->
-    <div class="text-center mb-4">
-        <h1 class="display-4 text-primary mb-2">
-            🎵 Apple Music Downloader Web UI
-        </h1>
-        <p class="lead text-muted mb-3">
-            A simple web interface for downloading your favorite Apple Music tracks
-        </p>
-        <div class="mb-3">
-            <a href="https://github.com/lalit22km/apple-music-dl-ui" target="_blank" class="btn btn-outline-warning btn-sm">
-                ⭐ Star this project on GitHub
+    {# Theme bootstrap (must run before paint to avoid FOUC) #}
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var dark = t ? t === 'dark' : prefersDark;
+                document.documentElement.classList.toggle('dark', dark);
+            } catch (e) {}
+        })();
+    </script>
+
+    {# Tailwind Play CDN (v3) #}
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            50:  '#fff1f3',
+                            100: '#ffdfe4',
+                            200: '#ffc4cd',
+                            300: '#ff97a7',
+                            400: '#ff5c75',
+                            500: '#fa233b',
+                            600: '#e1102f',
+                            700: '#bd0a26',
+                            800: '#9c0c24',
+                            900: '#811023'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px -4px rgb(15 23 42 / 0.08)',
+                        'soft-dark': '0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -8px rgb(0 0 0 / 0.5)'
+                    }
+                }
+            }
+        };
+    </script>
+
+    {# Fonts #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    {# Pinned dependencies w/ SRI #}
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.16.0/dist/axios.min.js"
+            integrity="sha384-a/VMdjcWT+6Ii+fn19leSlff1l2FT/RcMXcjP4JS2xjI+DHL54a79OAPk4+O2jmU"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"
+            integrity="sha384-ieG+IKD0d/ZPXyCBTMVAbqsQdns8QGJR/e26WMw7M4fkaI/rHcS/YIoi+ah9WGge"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+</head>
+<body class="bg-grid bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen">
+
+{# ============== HEADER ============== #}
+<header class="sticky top-0 z-40 border-b border-slate-200/60 bg-white/70 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-950/70">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        {# Brand #}
+        <a href="/" class="flex items-center gap-2.5 group">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft transition-transform group-hover:scale-105">
+                <i data-lucide="music" class="h-5 w-5"></i>
+            </span>
+            <span class="hidden sm:flex flex-col leading-tight">
+                <span class="text-sm font-semibold tracking-tight">Apple Music Downloader</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">Web UI</span>
+            </span>
+        </a>
+
+        {# Status + actions #}
+        <div class="flex items-center gap-2">
+            {% if wrapper_running %}
+            <span id="wrapper-indicator"
+                  class="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 transition-colors dark:text-emerald-400">
+                <span id="wrapper-indicator-dot" class="status-dot is-active h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+                <span id="wrapper-indicator-text">Running</span>
+            </span>
+            {% else %}
+            <span id="wrapper-indicator"
+                  class="inline-flex items-center gap-2 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-500/30 transition-colors dark:text-rose-400">
+                <span id="wrapper-indicator-dot" class="status-dot h-2 w-2 rounded-full bg-rose-500 dark:bg-rose-400"></span>
+                <span id="wrapper-indicator-text">Stopped</span>
+            </span>
+            {% endif %}
+
+            <button type="button" id="theme-toggle"
+                    aria-label="Toggle theme"
+                    class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
+                <i data-lucide="sun" class="block h-4 w-4 dark:hidden"></i>
+                <i data-lucide="moon" class="hidden h-4 w-4 dark:block"></i>
+            </button>
+
+            <a id="github-star-link" href="https://github.com/losslessbitlab/apple-music-downloader-webui" target="_blank" rel="noopener"
+               aria-label="Star this project on GitHub"
+               class="group inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-300/70 bg-gradient-to-r from-amber-50 to-orange-50 px-3 text-sm font-semibold text-amber-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-400 hover:from-amber-100 hover:to-orange-100 hover:shadow-md dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10 dark:text-amber-200 dark:hover:border-amber-400/50 dark:hover:from-amber-500/20 dark:hover:to-orange-500/20">
+                <i data-lucide="github" class="h-4 w-4"></i>
+                <span class="hidden md:inline">Star this project</span>
+                <span class="md:hidden">Star</span>
+                <i data-lucide="star" class="h-3.5 w-3.5 text-amber-500 transition-transform group-hover:scale-110 group-hover:fill-amber-400 dark:text-amber-300"></i>
+            </a>
+
+            <a href="/settings"
+               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
+                <i data-lucide="settings" class="h-4 w-4"></i>
+                <span class="hidden sm:inline">Settings</span>
             </a>
         </div>
     </div>
+</header>
 
-    <!-- Top bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <button class="btn btn-outline-light" onclick="window.location.href='/settings'">⚙ Settings</button>
-        </div>
-        <div>
-            <span id="wrapper-indicator"
-                  class="badge {{ 'bg-success' if wrapper_running else 'bg-danger' }}">
-                Wrapper: {{ 'Running' if wrapper_running else 'Stopped' }}
+{# ============== MAIN ============== #}
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8 space-y-8">
+
+    {# --- Hero --- #}
+    <section class="text-center pt-4 pb-2">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent dark:from-white dark:via-slate-200 dark:to-white">
+            Download Apple Music in pristine quality
+        </h1>
+        <p class="mt-3 text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Paste any Apple Music link, choose your format, and let the downloader handle the rest. ALAC, Atmos, and AAC supported.
+        </p>
+    </section>
+
+    {# --- Authentication card --- #}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft transition-shadow hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-start gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
             </span>
-        </div>
-    </div>
-
-    <!-- Login Section -->
-    <div class="text-center mb-3">
-        <button id="login-btn" class="btn btn-secondary">Login to Wrapper</button>
-        <button id="stop-wrapper-btn" class="btn btn-danger ms-2 d-none">Stop Wrapper</button>
-        <button id="auto-login-btn" class="btn btn-info ms-2 d-none">🤖 Auto Login</button>
-        <button id="forget-credentials-btn" class="btn btn-warning ms-2 d-none">🗑️ Forget Credentials</button>
-        
-        <div id="saved-credentials-info" class="mt-2 d-none">
-            <small class="text-success">💾 Saved credentials for: <span id="saved-email-display"></span></small>
-        </div>
-        
-        <div id="login-form" class="mt-3 d-none">
-            <input type="email" id="email" placeholder="Email" class="form-control mb-2 w-25 mx-auto">
-            <input type="password" id="password" placeholder="Password" class="form-control mb-2 w-25 mx-auto">
-            <button id="submit-login" class="btn btn-success">Login</button>
-        </div>
-    </div>
-
-    <!-- 2FA Modal -->
-    <div id="twofa-modal" class="modal-overlay d-none">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">🔐 Two-Factor Authentication Required</h5>
-            </div>
-            <div class="modal-body">
-                <p class="text-center mb-3">Please enter your 2FA code to continue:</p>
-                <input type="text" id="twofa-code" placeholder="Enter 2FA Code" class="form-control form-control-lg text-center mb-3" maxlength="6" autocomplete="off" pattern="[0-9]*" inputmode="numeric">
-                <div class="d-flex justify-content-center gap-2">
-                    <button id="submit-2fa" class="btn btn-success">Submit</button>
-                    <button id="cancel-2fa" class="btn btn-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Middle input area -->
-    <div class="text-center mb-4">
-        <input id="link-box" type="text" class="form-control form-control-lg mb-3 w-50 mx-auto"
-               placeholder="Paste Apple Music link here">
-
-        <div class="d-flex justify-content-center align-items-center mb-3">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="special-audio" checked>
-                <label class="form-check-label" for="special-audio">Special Audio</label>
-            </div>
-        </div>
-        
-        <div class="d-flex justify-content-center mb-3">
-            <div id="format-options" class="border rounded p-3" style="background-color: #333; border-color: #555; max-width: 300px;">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="format" id="atmos" value="ATMOS" checked>
-                    <label class="form-check-label" for="atmos">ATMOS</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="format" id="aac" value="AAC">
-                    <label class="form-check-label" for="aac">AAC</label>
-                </div>
+            <div class="flex-1">
+                <h2 class="text-base font-semibold tracking-tight">Authentication</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Login to the Apple Music wrapper before starting downloads.</p>
             </div>
         </div>
 
-        <div class="mt-3">
-            <button id="download-btn" class="btn btn-primary btn-lg" disabled>Download</button>
-        </div>
-    </div>
+        <div class="p-5 space-y-4">
 
-    <!-- Download Folders Info -->
-    <div class="row mb-4" id="download-folders-info" style="display: none;">
-        <div class="col-12">
-            <div class="alert alert-info">
-                <h6 class="mb-2">📁 Download Locations:</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <small><strong>ALAC:</strong> <span id="alac-folder"></span></small>
+            {# Saved credentials banner #}
+            <div id="saved-credentials-info" class="hidden rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 dark:border-emerald-800/50 dark:bg-emerald-500/10">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5 text-sm text-emerald-800 dark:text-emerald-300">
+                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                        <span>Saved credentials for <span id="saved-email-display" class="font-medium"></span></span>
                     </div>
-                    <div class="col-md-4">
-                        <small><strong>ATMOS:</strong> <span id="atmos-folder"></span></small>
-                    </div>
-                    <div class="col-md-4">
-                        <small><strong>AAC:</strong> <span id="aac-folder"></span></small>
+                    <div class="flex items-center gap-2">
+                        <button id="auto-login-btn" type="button"
+                                class="hidden inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                            <i data-lucide="bot" class="h-3.5 w-3.5"></i>
+                            Auto Login
+                        </button>
+                        <button id="forget-credentials-btn" type="button"
+                                class="hidden inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-50 dark:border-rose-700/60 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-900/30">
+                            <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
+                            Forget
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {# Action row #}
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="login-btn" type="button"
+                        class="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-500/40 active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100">
+                    <i data-lucide="log-in" class="h-4 w-4"></i>
+                    Login to Wrapper
+                </button>
+                <button id="stop-wrapper-btn" type="button"
+                        class="hidden inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-700 transition-all hover:bg-rose-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.98] dark:border-rose-700/60 dark:bg-rose-950/30 dark:text-rose-300 dark:hover:bg-rose-900/30">
+                    <i data-lucide="square" class="h-4 w-4"></i>
+                    Stop Wrapper
+                </button>
+            </div>
+
+            {# Login form #}
+            <div id="login-form" class="hidden grid gap-3 sm:grid-cols-2 sm:items-end">
+                <div class="sm:col-span-1">
+                    <label for="email" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"></i>
+                        <input type="email" id="email" autocomplete="email"
+                               placeholder="you@example.com"
+                               class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
+                    </div>
+                </div>
+                <div class="sm:col-span-1">
+                    <label for="password" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"></i>
+                        <input type="password" id="password" autocomplete="current-password"
+                               placeholder="••••••••"
+                               class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500">
+                    </div>
+                </div>
+                <div class="sm:col-span-2 flex justify-end">
+                    <button id="submit-login" type="button"
+                            class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500/40 active:scale-[0.98]">
+                        <i data-lucide="log-in" class="h-4 w-4"></i>
+                        Sign in
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# --- Add to queue card --- #}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft transition-shadow hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-start gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <i data-lucide="list-plus" class="h-5 w-5"></i>
+            </span>
+            <div class="flex-1">
+                <h2 class="text-base font-semibold tracking-tight">Queue downloads</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Paste one URL per line. Albums process sequentially after the first finishes.</p>
+            </div>
+            <a href="#" id="qhelp-toggle" class="hidden sm:inline text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">What gets scanned?</a>
+        </div>
+
+        <div class="p-5 space-y-5">
+            {# Multi-URL textarea #}
+            <div>
+                <label for="link-box" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Apple Music URLs (one per line)</label>
+                <textarea id="link-box" rows="3"
+                          placeholder="https://music.apple.com/us/album/...&#10;https://music.apple.com/us/album/...&#10;https://music.apple.com/us/playlist/..."
+                          class="w-full resize-y rounded-xl border border-slate-200 bg-white py-3 px-4 font-mono text-xs text-slate-900 placeholder:text-slate-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"></textarea>
+                <p id="url-count" class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">0 URLs detected</p>
+            </div>
+
+            {# Options row #}
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {# Special audio toggle (now defaults OFF and is remembered) #}
+                <label class="inline-flex items-center gap-3 cursor-pointer select-none">
+                    <span class="relative inline-flex h-6 w-11 items-center">
+                        <input type="checkbox" id="special-audio" class="peer sr-only">
+                        <span class="absolute inset-0 rounded-full bg-slate-300 transition-colors peer-checked:bg-brand-500 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500/40 dark:bg-slate-700"></span>
+                        <span class="absolute left-0.5 inline-block h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span>
+                    </span>
+                    <span class="flex flex-col">
+                        <span class="text-sm font-medium">Special Audio</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">Off = ALAC. On = pick ATMOS or AAC.</span>
+                    </span>
+                </label>
+
+                {# Format segmented control (only shown when Special Audio is on) #}
+                <div id="format-options" class="segmented inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 transition-opacity">
+                    <input type="radio" name="format" id="atmos" value="ATMOS" checked>
+                    <label for="atmos"
+                           class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+                        <i data-lucide="waves" class="h-3.5 w-3.5"></i> ATMOS
+                    </label>
+                    <input type="radio" name="format" id="aac" value="AAC">
+                    <label for="aac"
+                           class="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300">
+                        <i data-lucide="audio-lines" class="h-3.5 w-3.5"></i> AAC
+                    </label>
+                </div>
+            </div>
+
+            {# Queue-level toggles (Skip MV + Auto-verify). Both ON by
+               default; they propagate into the scan modal when it
+               opens and feed Quick Add directly. The little (i)
+               popovers next to each label give a one-click explanation
+               so users don't have to hover for a tooltip. #}
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 pt-1">
+                <div class="inline-flex items-center gap-1.5">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="dl-skip-mv" checked
+                               class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600">
+                        <span>Skip music videos</span>
+                    </label>
+                    <details class="info-pop relative">
+                        <summary class="info-pop-trigger" aria-label="What does Skip music videos do?">
+                            <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                        </summary>
+                        <div class="info-pop-body">
+                            <p class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Skip music videos</p>
+                            <p>
+                                Drops standalone music-video URLs from your queue and excludes MV tracks from album / playlist downloads. AMD (the underlying tool) tends to <strong>get stuck</strong> on a region-locked or unavailable music video and stop the whole album, so leaving this <strong>ON</strong> is the safe default.
+                            </p>
+                            <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                Turn it OFF only if you specifically want music-video files saved alongside the audio. Skipped MVs are reported in the queue card&apos;s log.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+                <div class="inline-flex items-center gap-1.5">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="dl-auto-verify" checked
+                               class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600">
+                        <span>Auto-verify (deep probe) on scan</span>
+                    </label>
+                    <details class="info-pop relative">
+                        <summary class="info-pop-trigger" aria-label="What does Auto-verify on scan do?">
+                            <i data-lucide="info" class="h-3.5 w-3.5"></i>
+                        </summary>
+                        <div class="info-pop-body">
+                            <p class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Auto-verify (deep probe)</p>
+                            <p>
+                                After every scan, ping Apple&apos;s CDN once per quality tier to confirm what they&apos;ll actually serve. Format chips switch from <code class="font-mono">~ inferred</code> to <code class="font-mono">&check; verified</code>, and tiers Apple won&apos;t deliver are greyed out so you don&apos;t queue a job that&apos;ll fail mid-download.
+                            </p>
+                            <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                Adds ~1&ndash;3 s per scanned URL. Recommended ON. Turn OFF for slightly faster scans (chips will say <em>inferred</em> only) &mdash; you can still hit <strong>Verify availability</strong> manually inside the scan modal.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            {# Action row #}
+            <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+                <button id="quick-add-btn" type="button" disabled
+                        class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                    <i data-lucide="zap" class="h-4 w-4"></i>
+                    Quick add (skip scan)
+                </button>
+                <button id="scan-btn" type="button" disabled
+                        class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition-all hover:shadow-xl hover:shadow-brand-500/40 hover:-translate-y-px focus:outline-none focus:ring-2 focus:ring-brand-500/50 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:hover:translate-y-0 dark:disabled:from-slate-700 dark:disabled:to-slate-700">
+                    <i data-lucide="search" class="h-4 w-4"></i>
+                    <span id="scan-btn-text">Scan &amp; confirm</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    {# --- Storage gauge --- #}
+    <section id="storage-gauge" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2.5">
+                <span class="grid h-8 w-8 place-items-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                    <i data-lucide="hard-drive" class="h-4 w-4"></i>
+                </span>
+                <h3 class="text-sm font-semibold tracking-tight">Storage</h3>
+            </div>
+            <button id="storage-refresh" type="button"
+                    class="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors inline-flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="h-3 w-3"></i> Refresh
+            </button>
+        </div>
+        <div id="storage-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+    </section>
+
+    {# --- System Health (collapsed by default; auto-expands on warnings) --- #}
+    <details id="health-card" class="group rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
+            <div class="flex items-center gap-2.5">
+                <span id="health-icon-wrap" class="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <i id="health-icon" data-lucide="heart-pulse" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold tracking-tight">System Health</h2>
+                    <p id="health-summary" class="text-xs text-slate-500 dark:text-slate-400">Checking…</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="health-refresh" type="button"
+                        class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                    <i data-lucide="refresh-cw" class="h-3 w-3"></i> Refresh
+                </button>
+                <a id="health-diagnostics" href="/diagnostics.zip"
+                   class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                   download>
+                    <i data-lucide="download" class="h-3 w-3"></i> Diagnostics
+                </a>
+                <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180"></i>
+            </div>
+        </summary>
+        <div id="health-grid" class="space-y-4 border-t border-slate-200 p-5 dark:border-slate-800"></div>
+    </details>
+
+    {# --- Queue panel --- #}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
+            <div class="flex items-center gap-2.5">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                    <i data-lucide="layers" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Queue</h2>
+                    <p id="queue-summary" class="text-xs text-slate-500 dark:text-slate-400">Waiting for jobs.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="sse-indicator" class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400" title="Live updates connection">
+                    <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Idle
+                </span>
+                <button type="button" id="clear-completed-btn"
+                        class="hidden text-xs text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-colors">
+                    Clear completed
+                </button>
+            </div>
+        </div>
+        <div id="queue-list" class="divide-y divide-slate-200 dark:divide-slate-800">
+            <div id="queue-empty" class="px-5 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+                <i data-lucide="package-open" class="mx-auto mb-3 h-10 w-10 opacity-40"></i>
+                <p>No jobs yet. Paste some Apple Music URLs above to get started.</p>
+            </div>
+        </div>
+    </section>
+
+    {# --- Downloaded songs (library) --- #}
+    <section id="library-section" class="hidden rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
+            <div class="flex items-center gap-2.5">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <i data-lucide="library" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Downloaded songs</h2>
+                    <p id="library-summary" class="text-xs text-slate-500 dark:text-slate-400">No completed downloads yet.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="search" id="library-filter" placeholder="Filter…"
+                       class="hidden sm:block w-44 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                <button id="library-expand-all" type="button"
+                        class="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+                    Expand all
+                </button>
+            </div>
+        </div>
+        <div id="library-list" class="divide-y divide-slate-200 dark:divide-slate-800"></div>
+    </section>
+
+    {# --- Download folders info --- #}
+    <section id="download-folders-info" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-center gap-2.5 mb-4">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <i data-lucide="folder-open" class="h-4 w-4"></i>
+            </span>
+            <h3 class="text-sm font-semibold tracking-tight">Download Locations</h3>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3">
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">ALAC</div>
+                <div class="mt-1 truncate font-mono text-xs text-slate-800 dark:text-slate-200" id="alac-folder" title=""></div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">ATMOS</div>
+                <div class="mt-1 truncate font-mono text-xs text-slate-800 dark:text-slate-200" id="atmos-folder" title=""></div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">AAC</div>
+                <div class="mt-1 truncate font-mono text-xs text-slate-800 dark:text-slate-200" id="aac-folder" title=""></div>
+            </div>
+        </div>
+    </section>
+
+    {# --- Wrapper log (per-job logs live inside each queue card) --- #}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+        <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-slate-800">
+            <div class="flex items-center gap-2">
+                <i data-lucide="activity" class="h-4 w-4 text-emerald-500"></i>
+                <h3 class="text-sm font-semibold tracking-tight">Wrapper log</h3>
+            </div>
+            <button type="button" data-clear-target="wrapper-logs"
+                    class="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+                Clear
+            </button>
+        </div>
+        <div id="wrapper-logs"
+             class="log-box h-56 overflow-y-auto bg-slate-50 px-5 py-4 text-slate-800 dark:bg-slate-950/50 dark:text-slate-200 rounded-b-2xl"></div>
+    </section>
+
+    <footer class="rounded-2xl border border-slate-200 bg-white/70 p-5 text-sm text-slate-600 shadow-soft dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400 dark:shadow-soft-dark">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="max-w-2xl">
+                <div class="mb-1 flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100">
+                    <i data-lucide="sparkles" class="h-4 w-4 text-amber-500"></i>
+                    Acknowledgements
+                </div>
+                <p class="text-sm leading-relaxed">
+                    This interface is possible because of the work behind
+                    <a href="https://github.com/zhaarey/apple-music-downloader" target="_blank" rel="noopener" class="font-medium text-brand-600 underline-offset-4 hover:underline dark:text-brand-400">zhaarey/apple-music-downloader</a>
+                    and
+                    <a href="https://github.com/WorldObservationLog/wrapper" target="_blank" rel="noopener" class="font-medium text-brand-600 underline-offset-4 hover:underline dark:text-brand-400">WorldObservationLog/wrapper</a>.
+                    This improved build also builds on the original
+                    <a href="https://github.com/lalit22km/alac-rip" target="_blank" rel="noopener" class="font-medium text-brand-600 underline-offset-4 hover:underline dark:text-brand-400">lalit22km/alac-rip</a>,
+                    with added quality-of-life features, UI refinements, safer setup, and download workflow improvements.
+                </p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                <span class="font-semibold">Respect to the upstream projects:</span>
+                downloader, authentication wrapper, and original UI foundation.
+            </div>
+        </div>
+    </footer>
+</main>
+
+{# ============== SCAN CONFIRM MODAL ============== #}
+<div id="scan-modal"
+     class="hidden fixed inset-0 z-50 items-start justify-center bg-slate-900/70 backdrop-blur-sm overflow-y-auto p-4 sm:p-8"
+     style="display: none;">
+    <div class="modal-anim w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+            <div class="flex items-center gap-3">
+                <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                    <i data-lucide="scan-search" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-semibold">Confirm queue</h3>
+                    <p id="scan-summary" class="text-xs text-slate-500 dark:text-slate-400">Scanning…</p>
+                </div>
+            </div>
+            <button id="scan-modal-close" type="button"
+                    class="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+        </div>
+
+        {# Global controls — apply to every item below #}
+        <div class="space-y-3 border-b border-slate-200 bg-slate-50/60 px-5 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+            {# Row 1: Verify availability + Lyrics. Skip-MV and Auto-verify
+               now live on the main Download card (queue level) — see
+               #dl-skip-mv and #dl-auto-verify in the page hero.  #}
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <button id="probe-all-btn" type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    <i data-lucide="search-check" class="h-3.5 w-3.5"></i>
+                    <span id="probe-all-text">Verify availability (deep probe)</span>
+                </button>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 max-w-sm">
+                    Confirms variants directly with Apple's CDN. Tiers it doesn't deliver are greyed out.
+                </p>
+                <div class="ml-auto flex items-center gap-3">
+                    <label for="lyrics-mode" class="text-xs font-medium text-slate-600 dark:text-slate-400">Lyrics:</label>
+                    <select id="lyrics-mode" class="rounded border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">Use config.yaml</option>
+                        <option value="standard">Standard LRC</option>
+                        <option value="karaoke">Karaoke (syllable-synced TTML)</option>
+                    </select>
+                </div>
+            </div>
+
+            {# Row 2: ALAC quality priority chain editor #}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Quality chain (ALAC kHz):</span>
+                <div id="chain-editor" class="flex flex-wrap items-center gap-1.5"></div>
+                <button id="chain-reset" type="button"
+                        class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        title="Reset to your saved Settings chain">
+                    Reset
+                </button>
+                <button id="chain-apply" type="button"
+                        class="rounded bg-brand-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-brand-600">
+                    Apply to all
+                </button>
+            </div>
+
+            {# Row 3: Format priority chain editor #}
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Format chain:</span>
+                <div id="fmt-chain-editor" class="flex flex-wrap items-center gap-1.5"></div>
+                <button id="fmt-chain-reset" type="button"
+                        class="rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                        title="Reset to default ALAC → AAC → ATMOS">
+                    Reset
+                </button>
+                <button id="fmt-chain-apply" type="button"
+                        class="rounded bg-brand-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-brand-600">
+                    Apply to all
+                </button>
+                <p class="basis-full text-[11px] text-slate-500 dark:text-slate-500">
+                    First enabled entry the asset supports wins. Click a chip to disable, ↑↓ to reorder.
+                    Per-item Format / Cap dropdowns still win.
+                </p>
+            </div>
+        </div>
+
+        <div id="scan-results" class="max-h-[55vh] overflow-y-auto divide-y divide-slate-200 dark:divide-slate-800"></div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
+            <div class="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="scan-strict" class="h-4 w-4 rounded">
+                    <span>Strict mode</span>
+                </label>
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="scan-skip-exists" class="h-4 w-4 rounded">
+                    <span>Skip if folder has audio</span>
+                </label>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="scan-cancel" type="button"
+                        class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                    Cancel
+                </button>
+                <button id="scan-confirm" type="button" disabled
+                        class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 px-5 py-2 text-sm font-semibold text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="check" class="h-4 w-4"></i>
+                    <span id="scan-confirm-text">Confirm 0 items</span>
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- Bottom logs -->
-    <div class="row">
-        <div class="col-md-6">
-            <h5>Downloader Logs</h5>
-            <div class="log-box" id="downloader-logs"></div>
+{# ============== 2FA MODAL ============== #}
+<div id="twofa-modal"
+     class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/70 backdrop-blur-sm"
+     style="display: none;">
+    <div class="modal-anim w-full max-w-md mx-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                <i data-lucide="shield" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <h3 class="text-base font-semibold">Two-factor authentication</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Enter the 6-digit code from your trusted device.</p>
+            </div>
         </div>
-        <div class="col-md-6">
-            <h5>Wrapper Logs</h5>
-            <div class="log-box" id="wrapper-logs"></div>
+
+        <input type="text" id="twofa-code"
+               maxlength="6" autocomplete="one-time-code"
+               pattern="[0-9]*" inputmode="numeric"
+               placeholder="000000"
+               class="font-mono w-full rounded-xl border border-slate-300 bg-white py-4 px-3 text-center text-2xl tracking-[0.6em] text-slate-900 placeholder:text-slate-300 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-600">
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+            <button id="cancel-2fa" type="button"
+                    class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                Cancel
+            </button>
+            <button id="submit-2fa" type="button"
+                    class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-brand-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                <i data-lucide="check" class="h-4 w-4"></i>
+                Verify
+            </button>
         </div>
     </div>
 </div>
 
 <script>
-// Check for saved credentials on page load
+// ============================================================================
+// Theme toggle
+// ============================================================================
+(function () {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    });
+})();
+
+// ============================================================================
+// Lucide icons
+// ============================================================================
+if (window.lucide) {
+    window.lucide.createIcons();
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+const $ = (id) => document.getElementById(id);
+
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function appendLog(boxId, line, kind /* 'ok' | 'err' | 'warn' | 'info' | undefined */) {
+    const box = $(boxId);
+    if (!box) return;
+    const colors = {
+        ok:   'text-emerald-600 dark:text-emerald-400',
+        err:  'text-rose-600 dark:text-rose-400',
+        warn: 'text-amber-600 dark:text-amber-400',
+        info: 'text-sky-600 dark:text-sky-400'
+    };
+    const cls = colors[kind] || '';
+    const prefix = kind === 'err' ? '✗ ' : kind === 'ok' ? '✓ ' : '› ';
+    box.insertAdjacentHTML('beforeend', `<div class="${cls}">${prefix}${escapeHtml(line)}</div>`);
+    box.scrollTop = box.scrollHeight;
+}
+
+function classifyLogLine(line) {
+    const lower = line.toLowerCase();
+    if (line.includes('✅') || line.includes('Ready for downloads') || line.includes('completed successfully')) return 'ok';
+    // Wrapper success markers (old + new build formats)
+    if (line.includes('[.] response type 6')) return 'ok';
+    if (line.includes('listening account info request')) return 'ok';
+    if (line.includes('account info cached successfully')) return 'ok';
+    // Wrapper info-level markers
+    if (line.startsWith('[!] listening') || line.includes('Music-Token:') || line.includes('StoreFront ID:')) return 'info';
+    if (line.includes('❌') || lower.includes('login failed') || lower.includes('error') || lower.includes(' failed')) return 'err';
+    if (line.includes('⚠') || lower.includes('warn')) return 'warn';
+    if (line.includes('🎵') || line.includes('🔐') || line.includes('🤖') || lower.startsWith('starting')) return 'info';
+    return null;
+}
+
+function renderLogs(boxId, lines) {
+    const box = $(boxId);
+    if (!box) return;
+    const html = lines.map(l => {
+        const kind = classifyLogLine(l);
+        const colors = {
+            ok:   'text-emerald-600 dark:text-emerald-400',
+            err:  'text-rose-600 dark:text-rose-400',
+            warn: 'text-amber-600 dark:text-amber-400',
+            info: 'text-sky-600 dark:text-sky-400'
+        };
+        const cls = colors[kind] || '';
+        const prefix = kind === 'err' ? '✗ ' : kind === 'ok' ? '✓ ' : '› ';
+        return `<div class="${cls}">${prefix}${escapeHtml(l)}</div>`;
+    }).join('');
+    if (box.innerHTML !== html) {
+        box.innerHTML = html;
+        box.scrollTop = box.scrollHeight;
+    }
+}
+
+// Clear buttons on log panes
+document.querySelectorAll('[data-clear-target]').forEach(b => {
+    b.addEventListener('click', () => {
+        const t = $(b.dataset.clearTarget);
+        if (t) t.innerHTML = '';
+    });
+});
+
+// ============================================================================
+// Saved credentials / auto-login
+// ============================================================================
 function checkSavedCredentials() {
     axios.get('/check_saved_credentials')
         .then(res => {
             if (res.data.has_credentials) {
-                document.getElementById('saved-credentials-info').classList.remove('d-none');
-                document.getElementById('saved-email-display').textContent = res.data.email;
-                document.getElementById('auto-login-btn').classList.remove('d-none');
-                document.getElementById('forget-credentials-btn').classList.remove('d-none');
+                $('saved-credentials-info').classList.remove('hidden');
+                $('saved-email-display').textContent = res.data.email;
+                $('auto-login-btn').classList.remove('hidden');
+                $('forget-credentials-btn').classList.remove('hidden');
             }
         });
 }
 
-// Auto-login functionality
-document.getElementById('auto-login-btn').addEventListener('click', () => {
-    const wrapperLogs = document.getElementById('wrapper-logs');
-    wrapperLogs.innerHTML += `<div>> 🤖 Starting auto-login...</div>`;
-    wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-    
-    axios.post('/auto_login')
-        .then(res => {
-            if (res.data.status === 'ok') {
-                wrapperLogs.innerHTML += `<div>> ${res.data.msg}</div>`;
-            } else {
-                wrapperLogs.innerHTML += `<div>> ❌ ${res.data.msg}</div>`;
-            }
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-        });
+$('auto-login-btn').addEventListener('click', () => {
+    appendLog('wrapper-logs', '🤖 Starting auto-login...', 'info');
+    axios.post('/auto_login').then(res => {
+        appendLog('wrapper-logs', res.data.msg, res.data.status === 'ok' ? null : 'err');
+    });
 });
 
-// Forget credentials functionality
-document.getElementById('forget-credentials-btn').addEventListener('click', () => {
-    if (confirm('Are you sure you want to delete saved credentials?')) {
-        axios.post('/delete_saved_credentials')
-            .then(res => {
-                if (res.data.status === 'ok') {
-                    document.getElementById('saved-credentials-info').classList.add('d-none');
-                    document.getElementById('auto-login-btn').classList.add('d-none');
-                    document.getElementById('forget-credentials-btn').classList.add('d-none');
-                    
-                    const wrapperLogs = document.getElementById('wrapper-logs');
-                    wrapperLogs.innerHTML += `<div>> 🗑️ Saved credentials deleted</div>`;
-                    wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-                }
-            });
-    }
+$('forget-credentials-btn').addEventListener('click', () => {
+    if (!confirm('Are you sure you want to delete saved credentials?')) return;
+    axios.post('/delete_saved_credentials').then(res => {
+        if (res.data.status === 'ok') {
+            $('saved-credentials-info').classList.add('hidden');
+            $('auto-login-btn').classList.add('hidden');
+            $('forget-credentials-btn').classList.add('hidden');
+            appendLog('wrapper-logs', '🗑 Saved credentials deleted', 'warn');
+        }
+    });
 });
 
-document.getElementById("login-btn").addEventListener("click", () => {
-    document.getElementById("login-form").classList.toggle("d-none");
+// ============================================================================
+// Login form
+// ============================================================================
+$('login-btn').addEventListener('click', () => {
+    $('login-form').classList.toggle('hidden');
 });
 
-document.getElementById("submit-login").addEventListener("click", () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    
-    // Add immediate feedback
-    const wrapperLogs = document.getElementById("wrapper-logs");
-    wrapperLogs.innerHTML += `<div>> Attempting to login with ${email}...</div>`;
-    wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-
-    axios.post("/login_wrapper", new URLSearchParams({email, password}))
-        .then(res => {
-            if (res.data.status === "ok") {
-                // Don't immediately set as running - wait for the success message in logs
-                wrapperLogs.innerHTML += `<div>> ${res.data.msg}</div>`;
-            } else {
-                wrapperLogs.innerHTML += `<div>> ERROR: ${res.data.msg}</div>`;
-            }
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-        })
-        .catch(err => {
-            wrapperLogs.innerHTML += `<div>> ERROR: Failed to connect to server</div>`;
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-        });
-});
-
-document.getElementById("download-btn").addEventListener("click", () => {
-    const link = document.getElementById("link-box").value;
-    const format = document.querySelector("input[name='format']:checked")?.value || "ATMOS";
-    const specialAudio = document.getElementById("special-audio").checked;
-    
-    if (!link.trim()) {
-        const logs = document.getElementById("downloader-logs");
-        logs.innerHTML += `<div style="color: #dc3545;"> ❌ Please enter a valid Apple Music URL</div>`;
-        logs.scrollTop = logs.scrollHeight;
+$('submit-login').addEventListener('click', () => {
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    if (!email || !password) {
+        appendLog('wrapper-logs', 'Please enter both email and password', 'err');
         return;
     }
+    appendLog('wrapper-logs', `Attempting to login with ${email}...`, 'info');
+    axios.post('/login_wrapper', new URLSearchParams({ email, password }))
+        .then(res => appendLog('wrapper-logs', res.data.msg, res.data.status === 'ok' ? null : 'err'))
+        .catch(() => appendLog('wrapper-logs', 'Failed to connect to server', 'err'));
+});
 
-    const formData = new URLSearchParams({
-        link: link,
-        format: format,
-        special_audio: specialAudio
+$('stop-wrapper-btn').addEventListener('click', () => {
+    axios.post('/stop_wrapper').then(res => {
+        appendLog('wrapper-logs', res.data.msg, res.data.status === 'ok' ? 'warn' : 'err');
+        if (res.data.status === 'ok') updateWrapperStatus(false);
     });
-
-    axios.post("/download", formData)
-        .then(res => {
-            const logs = document.getElementById("downloader-logs");
-            if (res.data.status === "ok") {
-                logs.innerHTML += `<div style="color: #28a745;"> ✅ ${res.data.msg}</div>`;
-                // Disable download button while download is running
-                document.getElementById("download-btn").disabled = true;
-                document.getElementById("download-btn").textContent = "Downloading...";
-            } else {
-                logs.innerHTML += `<div style="color: #dc3545;"> ❌ ${res.data.msg}</div>`;
-            }
-            logs.scrollTop = logs.scrollHeight;
-        })
-        .catch(err => {
-            const logs = document.getElementById("downloader-logs");
-            logs.innerHTML += `<div style="color: #dc3545;"> ❌ Failed to start download</div>`;
-            logs.scrollTop = logs.scrollHeight;
-        });
 });
 
-document.getElementById("stop-wrapper-btn").addEventListener("click", () => {
-    axios.post("/stop_wrapper")
-        .then(res => {
-            const wrapperLogs = document.getElementById("wrapper-logs");
-            wrapperLogs.innerHTML += `<div>> ${res.data.msg}</div>`;
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-            
-            if (res.data.status === "ok") {
-                updateWrapperStatus(false);
-            }
-        });
+// ============================================================================
+// URL helpers + Special-audio persistence (default OFF, remembered)
+// ============================================================================
+function parseUrls(raw) {
+    return (raw || '').split(/\s+/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+}
+
+function refreshUrlCount() {
+    const urls = parseUrls($('link-box').value);
+    $('url-count').textContent = `${urls.length} URL${urls.length === 1 ? '' : 's'} detected`;
+    const ready = wrapperIsRunning && urls.length > 0;
+    $('scan-btn').disabled = !ready;
+    $('quick-add-btn').disabled = !ready;
+}
+
+const SPECIAL_AUDIO_LS_KEY = 'alacrip:special-audio';
+function loadSpecialAudioPref() {
+    try {
+        const v = localStorage.getItem(SPECIAL_AUDIO_LS_KEY);
+        $('special-audio').checked = v === '1';
+    } catch (e) { $('special-audio').checked = false; }
+    syncFormatOptions();
+}
+function saveSpecialAudioPref() {
+    try { localStorage.setItem(SPECIAL_AUDIO_LS_KEY, $('special-audio').checked ? '1' : '0'); } catch (e) {}
+}
+
+function syncFormatOptions() {
+    const enabled = $('special-audio').checked;
+    const opts = $('format-options');
+    opts.style.opacity = enabled ? '1' : '0.4';
+    opts.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = !enabled);
+}
+$('special-audio').addEventListener('change', () => {
+    saveSpecialAudioPref();
+    syncFormatOptions();
 });
+loadSpecialAudioPref();
+
+$('link-box').addEventListener('input', refreshUrlCount);
+
+function chosenFormat() {
+    if (!$('special-audio').checked) return 'ALAC';
+    return document.querySelector("input[name='format']:checked")?.value || 'ATMOS';
+}
+
+// ============================================================================
+// Wrapper status updates
+// ============================================================================
+const STATUS_CLASSES = {
+    running: 'inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 transition-colors dark:text-emerald-400',
+    stopped: 'inline-flex items-center gap-2 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-600 ring-1 ring-inset ring-rose-500/30 transition-colors dark:text-rose-400'
+};
+const DOT_CLASSES = {
+    running: 'status-dot is-active h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400',
+    stopped: 'status-dot h-2 w-2 rounded-full bg-rose-500 dark:bg-rose-400'
+};
+// Initial state is read from the indicator dot the server rendered.
+let wrapperIsRunning = ($('wrapper-indicator-dot') || {}).classList?.contains('is-active') || false;
 
 function updateWrapperStatus(running) {
-    const indicator = document.getElementById("wrapper-indicator");
-    const downloadBtn = document.getElementById("download-btn");
-    const stopBtn = document.getElementById("stop-wrapper-btn");
-    
+    wrapperIsRunning = !!running;
+    const indicator = $('wrapper-indicator');
+    const dot = $('wrapper-indicator-dot');
+    const text = $('wrapper-indicator-text');
+    const stopBtn = $('stop-wrapper-btn');
+
     if (running) {
-        indicator.className = "badge bg-success";
-        indicator.innerText = "Wrapper: Running";
-        downloadBtn.disabled = false;
-        stopBtn.classList.remove("d-none");
+        indicator.className = STATUS_CLASSES.running;
+        dot.className = DOT_CLASSES.running;
+        text.textContent = 'Running';
+        stopBtn.classList.remove('hidden');
     } else {
-        indicator.className = "badge bg-danger";
-        indicator.innerText = "Wrapper: Stopped";
-        downloadBtn.disabled = true;
-        stopBtn.classList.add("d-none");
+        indicator.className = STATUS_CLASSES.stopped;
+        dot.className = DOT_CLASSES.stopped;
+        text.textContent = 'Stopped';
+        stopBtn.classList.add('hidden');
     }
+    refreshUrlCount();
+}
+updateWrapperStatus(wrapperIsRunning);
+
+// ============================================================================
+// Wrapper-log polling (queue updates flow over SSE separately)
+// ============================================================================
+function updateWrapperOnly() {
+    axios.get('/get_logs').then(res => {
+        const data = res.data;
+        if (data.wrapper && data.wrapper.length) renderLogs('wrapper-logs', data.wrapper);
+        updateWrapperStatus(!!data.wrapper_running);
+        const modal = $('twofa-modal');
+        if (data.wrapper_needs_2fa) {
+            if (modal.classList.contains('hidden')) show2FAModal();
+        } else {
+            if (!modal.classList.contains('hidden')) hide2FAModal();
+        }
+    }).catch(() => {});
+}
+updateWrapperOnly();
+setInterval(updateWrapperOnly, 1500);
+
+// ============================================================================
+// Download folder info
+// ============================================================================
+function loadDownloadFolders() {
+    axios.get('/get_download_folders').then(res => {
+        if (res.data.status === 'ok') {
+            const setFolder = (id, val) => {
+                const el = $(id);
+                el.textContent = val;
+                el.title = val;
+            };
+            setFolder('alac-folder', res.data.folders.alac);
+            setFolder('atmos-folder', res.data.folders.atmos);
+            setFolder('aac-folder', res.data.folders.aac);
+            $('download-folders-info').classList.remove('hidden');
+        }
+    }).catch(() => {});
+}
+loadDownloadFolders();
+
+// ============================================================================
+// Storage gauge
+// ============================================================================
+function humanBytes(n) {
+    if (n == null) return '?';
+    let f = Number(n);
+    const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+    let i = 0;
+    while (f >= 1024 && i < u.length - 1) { f /= 1024; i++; }
+    return f.toFixed(f >= 100 ? 0 : 1) + ' ' + u[i];
 }
 
-function updateLogs() {
-    axios.get("/get_logs").then(res => {
-        const wrapperBox = document.getElementById("wrapper-logs");
-        const downloaderBox = document.getElementById("downloader-logs");
-        const downloadBtn = document.getElementById("download-btn");
+function refreshStorage() {
+    axios.get('/storage').then(res => {
+        if (res.data.status !== 'ok') return;
+        const grid = $('storage-grid');
+        grid.innerHTML = '';
+        const labels = { alac: 'ALAC', atmos: 'Atmos', aac: 'AAC', mv: 'Music Videos' };
+        Object.entries(res.data.folders).forEach(([key, info]) => {
+            const total = info.total_bytes || 0;
+            const free = info.free_bytes || 0;
+            const used = info.used_bytes || 0;
+            const fillPct = total > 0 ? Math.min(100, ((total - free) / total) * 100) : 0;
+            const card = document.createElement('div');
+            card.className = 'rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/40';
+            card.innerHTML = `
+                <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <span>${labels[key] || key}</span>
+                    <button class="text-[10px] font-medium text-brand-600 hover:underline" data-open-folder="${escapeHtml(info.path)}">Open</button>
+                </div>
+                <div class="mt-2 truncate font-mono text-[11px] text-slate-700 dark:text-slate-200" title="${escapeHtml(info.path)}">${escapeHtml(info.path)}</div>
+                <div class="mt-2 text-xs text-slate-700 dark:text-slate-200">
+                    <span class="font-semibold">${humanBytes(used)}</span>
+                    <span class="text-slate-500 dark:text-slate-400">used · ${info.file_count} file${info.file_count === 1 ? '' : 's'}</span>
+                </div>
+                <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div class="h-full bg-brand-500" style="width: ${fillPct.toFixed(1)}%"></div>
+                </div>
+                <div class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">${humanBytes(free)} free of ${humanBytes(total)}</div>
+            `;
+            grid.appendChild(card);
+        });
+        $('storage-gauge').classList.remove('hidden');
+    }).catch(() => {});
+}
+$('storage-refresh').addEventListener('click', refreshStorage);
+refreshStorage();
+setInterval(refreshStorage, 30000);
 
-        // Only update if there are actually logs to show
-        if (res.data.wrapper.length > 0) {
-            // Color-code success and error messages
-            wrapperBox.innerHTML = res.data.wrapper.map(l => {
-                if (l.includes("✅") || l.includes("Ready for downloads")) {
-                    return `<div style="color: #28a745;">> ${l}</div>`;
-                } else if (l.includes("❌") || l.includes("Login failed") || l.includes("ERROR")) {
-                    return `<div style="color: #dc3545;">> ${l}</div>`;
-                } else if (l.includes("[.] response type 6")) {
-                    return `<div style="color: #28a745; font-weight: bold;">> ${l}</div>`;
-                } else {
-                    return `<div>> ${l}</div>`;
-                }
-            }).join("");
-            wrapperBox.scrollTop = wrapperBox.scrollHeight;
-        }
-        
-        if (res.data.downloader.length > 0) {
-            // Color-code download messages
-            downloaderBox.innerHTML = res.data.downloader.map(l => {
-                if (l.includes("✅") || l.includes("completed successfully")) {
-                    return `<div style="color: #28a745;">> ${l}</div>`;
-                } else if (l.includes("❌") || l.includes("failed") || l.includes("Error")) {
-                    return `<div style="color: #dc3545;">> ${l}</div>`;
-                } else if (l.includes("🎵") || l.includes("Starting")) {
-                    return `<div style="color: #17a2b8;">> ${l}</div>`;
-                } else {
-                    return `<div>> ${l}</div>`;
-                }
-            }).join("");
-            downloaderBox.scrollTop = downloaderBox.scrollHeight;
-        }
-        
-        // Update download button state based on download status
-        if (res.data.download_running) {
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = "Downloading...";
+// ============================================================================
+// System Health card — collapsed by default. Auto-expands the first time a
+// /health response has anything in a non-OK state, so users don't have to
+// look for the card to see something's wrong. Manual collapses stick.
+// ============================================================================
+const HEALTH_AUTO_OPEN_KEY = 'alac-rip:healthCardAutoOpened';
+function pillHtml(label, tone, value, note) {
+    const styles = {
+        ok: ['border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-700/40 dark:bg-emerald-500/10 dark:text-emerald-300', 'check-circle-2'],
+        warn: ['border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700/40 dark:bg-amber-500/10 dark:text-amber-300', 'circle-alert'],
+        bad: ['border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-700/40 dark:bg-rose-500/10 dark:text-rose-300', 'alert-triangle'],
+        info: ['border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-700/40 dark:bg-sky-500/10 dark:text-sky-300', 'info'],
+        muted: ['border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300', 'circle'],
+    };
+    const [cls, icon] = styles[tone] || styles.muted;
+    return `
+        <div class="rounded-xl border ${cls} px-3 py-2 text-xs">
+            <div class="flex items-center justify-between gap-2">
+                <span class="flex items-center gap-2 min-w-0 font-medium">
+                    <i data-lucide="${icon}" class="h-3.5 w-3.5 shrink-0"></i>
+                    <span class="truncate">${escapeHtml(label)}</span>
+                </span>
+                ${value ? `<span class="font-mono text-[10.5px] opacity-80 truncate" title="${escapeHtml(value)}">${escapeHtml(value)}</span>` : ''}
+            </div>
+            ${note ? `<p class="mt-1 pl-5 text-[11px] leading-snug opacity-80">${escapeHtml(note)}</p>` : ''}
+        </div>`;
+}
+
+function healthDetailRow(label, tone, value, path) {
+    return `
+        <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-900">
+            <div class="min-w-0">
+                <div class="font-medium text-slate-700 dark:text-slate-200">${escapeHtml(label)}</div>
+                ${path ? `<div class="truncate text-[11px] text-slate-400" title="${escapeHtml(path)}">${escapeHtml(path)}</div>` : ''}
+            </div>
+            <span class="shrink-0 rounded-full px-2 py-0.5 text-[10.5px] ${
+                tone === 'bad' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+                : tone === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                : tone === 'ok' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+            }">${escapeHtml(value)}</span>
+        </div>`;
+}
+
+function refreshHealth() {
+    axios.get('/health').then(res => {
+        const d = res.data || {};
+        const tokenLen = d.media_user_token_len || 0;
+        const tokenOk = tokenLen >= 50;
+        const setupIssues = [];
+        if (!d.amd_dir_exists) setupIssues.push('downloader folder');
+        if (!d.config_yaml_exists) setupIssues.push('config.yaml');
+        if (!d.wrapper_bin_exists) setupIssues.push('wrapper binary');
+        if (!d.go_available) setupIssues.push('go');
+        if (!d.ffprobe_available) setupIssues.push('ffprobe');
+        const coreOk = setupIssues.length === 0;
+        const wrapperReady = !!d.wrapper_process_running && !!d.wrapper_login_ok;
+        const wrapperTone = wrapperReady ? 'ok' : (d.wrapper_process_running ? 'warn' : 'muted');
+        const tokenTone = tokenOk ? 'ok' : 'warn';
+        const important = [
+            pillHtml('Core setup', coreOk ? 'ok' : 'bad', coreOk ? 'Ready' : `${setupIssues.length} issue${setupIssues.length === 1 ? '' : 's'}`, coreOk ? 'Required files and tools are available.' : `Missing: ${setupIssues.join(', ')}`),
+            pillHtml('Apple login', wrapperTone, wrapperReady ? 'Logged in' : (d.wrapper_process_running ? 'In progress' : 'Not running'), wrapperReady ? 'Wrapper is ready for downloads.' : 'Use the login panel before starting downloads.'),
+            pillHtml('Media User Token', tokenTone, tokenOk ? 'Saved' : 'Needs attention', tokenOk ? `${tokenLen} chars detected.` : 'Needed for reliable AAC, lyrics, and some availability checks.'),
+            pillHtml('Queue', d.queue_busy ? 'info' : 'ok', d.queue_busy ? 'Active' : 'Idle', d.queue_busy ? 'A download is currently running.' : 'No active download job.'),
+        ].join('');
+
+        const toolDetails = [
+            healthDetailRow('Apple Music Downloader', d.amd_dir_exists ? 'ok' : 'bad', d.amd_dir_exists ? 'present' : 'missing'),
+            healthDetailRow('config.yaml', d.config_yaml_exists ? 'ok' : 'bad', d.config_yaml_exists ? 'present' : 'missing'),
+            healthDetailRow('wrapper binary', d.wrapper_bin_exists ? 'ok' : 'bad', d.wrapper_bin_exists ? 'present' : 'missing'),
+            healthDetailRow('go', d.go_available ? 'ok' : 'bad', d.go_available ? 'on PATH' : 'not found'),
+            healthDetailRow('ffprobe', d.ffprobe_available ? 'ok' : 'bad', d.ffprobe_available ? 'on PATH' : 'not found'),
+            healthDetailRow('MP4Box (optional)', d.mp4box_available ? 'ok' : 'warn', d.mp4box_available ? 'on PATH' : 'not installed — embedding limited'),
+            healthDetailRow('wrapper port 10020', d.wrapper_process_running ? (d.wrapper_port_10020_alive ? 'ok' : 'warn') : 'muted', d.wrapper_process_running ? (d.wrapper_port_10020_alive ? 'alive' : 'not ready') : 'inactive'),
+            healthDetailRow('wrapper port 20020', d.wrapper_process_running ? (d.wrapper_port_20020_alive ? 'ok' : 'warn') : 'muted', d.wrapper_process_running ? (d.wrapper_port_20020_alive ? 'alive' : 'not ready') : 'inactive'),
+        ].join('');
+
+        const folderDetails = Object.entries(d.save_folders || {}).map(([k, f]) => {
+            const free = f.free_bytes;
+            const exists = !!f.exists;
+            const lowSpace = exists && free != null && free < 500 * 1024 * 1024;
+            const tone = lowSpace ? 'warn' : (exists ? 'ok' : 'muted');
+            const value = lowSpace ? `${humanBytes(free)} free` : (exists ? (free != null ? `${humanBytes(free)} free` : 'ready') : 'created on download');
+            return healthDetailRow(`save folder · ${k}`, tone, value, f.path || '');
+        }).join('');
+
+        const grid = $('health-grid');
+        grid.innerHTML = `
+            <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">${important}</div>
+            <details class="rounded-xl border border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/40">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <span class="inline-flex items-center gap-2"><i data-lucide="list-checks" class="h-3.5 w-3.5"></i> Technical details</span>
+                    <span class="inline-flex items-center gap-1 text-[11px] text-slate-400">folders are created automatically <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i></span>
+                </summary>
+                <div class="grid gap-2 border-t border-slate-200 p-3 sm:grid-cols-2 lg:grid-cols-3 dark:border-slate-700">
+                    ${toolDetails}
+                    ${folderDetails}
+                </div>
+            </details>`;
+        const bad = setupIssues.length;
+
+        const sum = $('health-summary');
+        const iconWrap = $('health-icon-wrap');
+        const icon = $('health-icon');
+        if (bad === 0) {
+            sum.textContent = tokenOk ? (wrapperReady ? 'Ready for downloads.' : 'Core ready. Login when you want to download.') : 'Core ready. Add Media User Token for AAC/lyrics.';
+            sum.className = tokenOk ? 'text-xs text-emerald-600 dark:text-emerald-400' : 'text-xs text-amber-600 dark:text-amber-400';
+            iconWrap.className = 'grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+            icon.setAttribute('data-lucide', 'heart-pulse');
         } else {
-            if (res.data.wrapper_running) {
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = "Download";
-            }
+            sum.textContent = `${bad} setup issue${bad === 1 ? '' : 's'} detected — open to inspect.`;
+            sum.className = 'text-xs text-amber-600 dark:text-amber-400';
+            iconWrap.className = 'grid h-9 w-9 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400';
+            icon.setAttribute('data-lucide', 'alert-triangle');
+            // First time we see a real issue this session, pop the card
+            // open so the user actually notices. Subsequent refreshes
+            // respect their manual collapse.
+            try {
+                if (!sessionStorage.getItem(HEALTH_AUTO_OPEN_KEY)) {
+                    $('health-card').open = true;
+                    sessionStorage.setItem(HEALTH_AUTO_OPEN_KEY, '1');
+                }
+            } catch { /* private mode etc. */ }
         }
-        
-        // Update wrapper status based on server response
-        updateWrapperStatus(res.data.wrapper_running);
-        
-        // Check for 2FA requirement
-        if (res.data.wrapper_needs_2fa) {
-            const modal = document.getElementById('twofa-modal');
-            if (modal.classList.contains('d-none')) {
-                show2FAModal();
-            }
+        if (window.lucide) window.lucide.createIcons();
+    }).catch(() => {
+        const sum = $('health-summary');
+        sum.textContent = 'Health endpoint unreachable.';
+        sum.className = 'text-xs text-rose-600 dark:text-rose-400';
+    });
+}
+$('health-refresh').addEventListener('click', (e) => {
+    // The Refresh button lives inside <summary>, which would otherwise
+    // toggle the <details> open/closed on every click.
+    e.preventDefault();
+    e.stopPropagation();
+    refreshHealth();
+});
+$('health-diagnostics').addEventListener('click', (e) => {
+    // Same story — don't toggle the panel just because the user grabs
+    // the diagnostics zip.
+    e.stopPropagation();
+});
+refreshHealth();
+setInterval(refreshHealth, 30000);
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-open-folder]');
+    if (!btn) return;
+    const path = btn.getAttribute('data-open-folder');
+    axios.post('/open_folder', { path }, { headers: { 'Content-Type': 'application/json' } })
+        .then(r => {
+            if (r.data.status !== 'ok') showToast(r.data.msg || 'Open failed', 'err');
+        })
+        .catch(() => showToast('Open failed', 'err'));
+});
+
+// ============================================================================
+// Toast
+// ============================================================================
+function showToast(msg, kind /* 'ok' | 'err' | 'warn' | 'info' */) {
+    const wrap = document.body;
+    const el = document.createElement('div');
+    const colors = {
+        ok: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-500/10 dark:text-emerald-200',
+        err: 'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-700/50 dark:bg-rose-500/10 dark:text-rose-200',
+        warn: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700/50 dark:bg-amber-500/10 dark:text-amber-200',
+        info: 'border-sky-300 bg-sky-50 text-sky-900 dark:border-sky-700/50 dark:bg-sky-500/10 dark:text-sky-200'
+    };
+    el.className = `fixed bottom-6 right-6 z-50 max-w-sm rounded-xl border px-4 py-3 text-sm shadow-lg ${colors[kind] || colors.info}`;
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 3500);
+}
+
+// ============================================================================
+// Browser desktop notifications
+// ============================================================================
+function notifyBrowser(title, body) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+        try { new Notification(title, { body }); } catch (e) {}
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(p => {
+            if (p === 'granted') { try { new Notification(title, { body }); } catch (e) {} }
+        });
+    }
+}
+// Ask once, lazily, after first user interaction
+document.addEventListener('click', function askOnce() {
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    document.removeEventListener('click', askOnce);
+}, { once: true });
+
+// ============================================================================
+// Scan flow
+// ============================================================================
+let scanResults = [];
+// User-defined fallback chain. The order is the priority order. The
+// `enabled` flag toggles a tier on/off without removing it from the
+// list (so users can re-enable without typing). Defaults are filled
+// from /scan response and from the editor in the modal.
+const ALAC_TIERS_ALL = [44100, 48000, 96000, 192000];
+let scanFallbackChain = [48000, 44100, 96000, 192000];
+let chainState = scanFallbackChain.map(hz => ({ hz, enabled: true }));
+
+// Format priority chain. Same shape as `chainState`, but for codec.
+// Default order: ALAC → AAC → ATMOS. For each item we walk the chain
+// and pick the first format the asset actually supports.
+const FORMAT_OPTIONS_ALL = ['ALAC', 'AAC', 'ATMOS'];
+let formatChainState = FORMAT_OPTIONS_ALL.map(f => ({ fmt: f, enabled: true }));
+
+// Verified-by-probe data, keyed by index of `scanResults`. When present,
+// trumps the iTunes-trait-inferred `available_tiers` for that item.
+const verifiedByIdx = new Map();
+
+// Per-item track-list expansion state, keyed by scanResults index.
+const trackExpandedByIdx = new Set();
+
+// Persisted UI prefs (auto-verify toggle).
+const PREFS_KEY = 'alac-rip:scanModalPrefs';
+function loadModalPrefs() {
+    // Stored as {autoVerify:bool, skipMv:bool}. Both default true when
+    // the key is missing. !== false is intentional — old installs that
+    // only persisted autoVerify will keep skipMv ON.
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); }
+    catch { return {}; }
+}
+function saveModalPrefs(patch) {
+    // Merge so updating one key doesn't wipe the other.
+    try {
+        const cur = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+        localStorage.setItem(PREFS_KEY, JSON.stringify(Object.assign(cur, patch)));
+    } catch { localStorage.setItem(PREFS_KEY, JSON.stringify(patch)); }
+}
+
+// ---------------------------------------------------------------------------
+// Storage estimates
+// ---------------------------------------------------------------------------
+// Realistic ALAC bitrates Apple's CDN serves when probe data isn't available
+// yet. These are average-of-album numbers from observed m3u8 manifests
+// across many releases — accurate within ~10% for the inferred path.
+const TYPICAL_ALAC_BPS = {
+    44100: 950 * 1000,   // 16-bit/44.1 kHz lossless (~960 kbps)
+    48000: 1500 * 1000,  // 24-bit/48 kHz (~1.5 Mbps)
+    96000: 4500 * 1000,  // 24-bit/96 kHz (~4.5 Mbps)
+    192000: 9300 * 1000, // 24-bit/192 kHz (~9.3 Mbps)
+};
+const TYPICAL_AAC_BPS = 256 * 1000;
+const TYPICAL_ATMOS_BPS = 768 * 1000;
+
+function bandwidthForTier(scan, idx, hz) {
+    const v = verifiedByIdx.get(idx);
+    if (v && v.alac_variants_by_hz && v.alac_variants_by_hz[hz]) {
+        return v.alac_variants_by_hz[hz].bandwidth_bps || 0;
+    }
+    return TYPICAL_ALAC_BPS[hz] || 0;
+}
+
+function bandwidthForFormat(scan, idx, fmt) {
+    const v = verifiedByIdx.get(idx);
+    if (fmt === 'AAC') {
+        if (v && v.aac && v.aac.bandwidth_bps) return v.aac.bandwidth_bps;
+        return TYPICAL_AAC_BPS;
+    }
+    if (fmt === 'ATMOS') {
+        if (v && v.atmos && v.atmos.bandwidth_bps) return v.atmos.bandwidth_bps;
+        return TYPICAL_ATMOS_BPS;
+    }
+    return 0;
+}
+
+function formatBytes(b) {
+    if (!b || !isFinite(b)) return '–';
+    if (b >= 1024 * 1024 * 1024) return (b / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+    if (b >= 1024 * 1024) return (b / 1024 / 1024).toFixed(0) + ' MB';
+    if (b >= 1024) return (b / 1024).toFixed(0) + ' KB';
+    return b + ' B';
+}
+
+function durationLabel(ms) {
+    if (!ms || ms < 0) return '–';
+    const total = Math.round(ms / 1000);
+    const mm = Math.floor(total / 60);
+    const ss = total % 60;
+    return `${mm}:${String(ss).padStart(2, '0')}`;
+}
+
+// Size in bytes for a single audio stream of `bandwidth_bps` over
+// `duration_ms` milliseconds. (bandwidth × seconds / 8)
+function sizeBytes(bandwidth_bps, duration_ms) {
+    if (!bandwidth_bps || !duration_ms) return 0;
+    return Math.round(bandwidth_bps * (duration_ms / 1000) / 8);
+}
+
+function trait(label, color) {
+    return `<span class="inline-flex items-center rounded-full bg-${color}-500/10 px-2 py-0.5 text-[10px] font-medium text-${color}-700 dark:text-${color}-300">${label}</span>`;
+}
+
+function qualityBadge(scan) {
+    if (!scan.ok) return trait('scan failed', 'rose');
+    const parts = [];
+    if (scan.has_hi_res) parts.push(trait('Hi-Res 24/192', 'violet'));
+    else if (scan.has_lossless) parts.push(trait('Lossless 24/48', 'emerald'));
+    if (scan.has_atmos) parts.push(trait('Atmos', 'fuchsia'));
+    if (scan.has_lossy_only) parts.push(trait('AAC only', 'amber'));
+    if (parts.length === 0) parts.push(trait('quality unknown', 'slate'));
+    return parts.join(' ');
+}
+
+function khzLabel(hz) {
+    return (hz / 1000).toFixed(1).replace(/\.0$/, '') + ' kHz';
+}
+
+function autoPickLabel(scan) {
+    if (!scan.ok || !scan.max_alac_hz) return 'AAC';
+    return khzLabel(scan.auto_alac_hz) + ' ALAC';
+}
+
+// Effective tier list for a given scan: verified-by-probe takes priority,
+// else the iTunes-trait-inferred `available_tiers`. Returned sorted asc.
+function effectiveTiers(scan, idx) {
+    const verified = verifiedByIdx.get(idx);
+    if (verified && verified.alac_sample_rates_hz && verified.alac_sample_rates_hz.length) {
+        return [...verified.alac_sample_rates_hz].sort((a, b) => a - b);
+    }
+    return [...(scan.available_tiers || [])].sort((a, b) => a - b);
+}
+
+// First chain-enabled tier the asset actually supports. Mirrors the
+// server-side pick_alac_target() so the UI's auto-pick label is accurate.
+function autoPickFromChain(scan, idx) {
+    const chain = chainState.filter(c => c.enabled).map(c => c.hz);
+    const avail = new Set(effectiveTiers(scan, idx));
+    if (!avail.size) return 0;
+    for (const hz of chain) {
+        if (avail.has(hz)) return hz;
+    }
+    // Chain didn't match → fall back to highest available (server does the same).
+    return Math.max(...avail);
+}
+
+// "Available tiers" chips. Renders every ALAC sample-rate variant Apple
+// makes available for this asset, with the chain-picked tier highlighted
+// and an estimated total album size next to each tier label. When
+// verified data is present we render an extra "verified" badge so the
+// user can tell sizes came from Apple's CDN, not from typical-bitrate
+// estimates.
+function renderAvailableTiersChips(scan, idx) {
+    const verified = verifiedByIdx.get(idx);
+    const tiers = effectiveTiers(scan, idx);
+    const available = new Set(tiers);
+    const auto = autoPickFromChain(scan, idx);
+    const dur = scan.duration_ms || 0;
+    const chips = ALAC_TIERS_ALL.map(hz => {
+        const has = available.has(hz);
+        const isAuto = hz === auto;
+        let cls;
+        if (isAuto) {
+            cls = 'bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/40 dark:text-emerald-300';
+        } else if (has) {
+            cls = 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700';
         } else {
-            // Hide 2FA modal if no longer needed
-            const modal = document.getElementById('twofa-modal');
-            if (!modal.classList.contains('d-none')) {
-                hide2FAModal();
-            }
+            cls = 'bg-transparent text-slate-400 line-through ring-1 ring-slate-200 dark:text-slate-600 dark:ring-slate-800';
         }
-        
-    }).catch(err => {
-        console.log("Error fetching logs:", err);
+        const star = isAuto ? '★ ' : '';
+        // Size suffix only when we have a duration AND the tier is available.
+        let sizeSuffix = '';
+        if (has && dur) {
+            const bps = bandwidthForTier(scan, idx, hz);
+            const total = sizeBytes(bps, dur);
+            if (total) sizeSuffix = ` <span class="text-[9px] opacity-70">· ${formatBytes(total)}</span>`;
+        }
+        const tip = has
+            ? (isAuto ? `Auto-picked from your priority chain${sizeSuffix ? '' : ''}` : 'Available — pick in Cap dropdown')
+            : 'Not available for this asset';
+        return `<span title="${tip}" class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}">${star}${khzLabel(hz)}${sizeSuffix}</span>`;
+    }).join(' ');
+    const verifiedBadge = verified
+        ? `<span title="Variants and sizes verified against Apple's CDN m3u8" class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300">✓ verified</span>`
+        : `<span title="Inferred from iTunes catalog metadata. Sizes use typical Apple bitrates. Click Verify to confirm with Apple's CDN." class="inline-flex items-center rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">~ inferred</span>`;
+    let extra = '';
+    if (verified) {
+        const bits = new Set();
+        for (const k of ['lossless', 'hi_res']) {
+            const v = verified[k];
+            if (v && v.available && v.bit_depth) bits.add(v.bit_depth);
+        }
+        const bitsLabel = bits.size ? [...bits].sort((a,b)=>a-b).join('/') + '-bit' : '';
+        const aac = verified.aac && verified.aac.available ? `AAC ${verified.aac.kbps} kbps` : '';
+        const atm = verified.atmos && verified.atmos.available ? `Atmos ${verified.atmos.kbps} kbps` : '';
+        const tail = [bitsLabel, aac, atm].filter(Boolean).join(' · ');
+        if (tail) extra = `<span class="text-[10px] text-slate-500">${tail}</span>`;
+    }
+    return `<div class="mt-1.5 flex flex-wrap items-center gap-1.5">${chips}<span class="mx-1 text-slate-300 dark:text-slate-700">·</span>${verifiedBadge}${extra ? '<span class="mx-1 text-slate-300 dark:text-slate-700">·</span>' + extra : ''}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Format chain helpers
+// ---------------------------------------------------------------------------
+// Set of formats this asset actually supports (verified-by-probe wins
+// over inferred traits). ALAC requires at least one ALAC tier.
+function effectiveFormatsAvailable(scan, idx) {
+    const out = new Set();
+    const tiers = effectiveTiers(scan, idx);
+    const v = verifiedByIdx.get(idx);
+    if (tiers.length) out.add('ALAC');
+    if (v) {
+        if (v.aac && v.aac.available) out.add('AAC');
+        if (v.atmos && v.atmos.available) out.add('ATMOS');
+    } else {
+        // Inferred fallback: AAC is essentially always present on Apple's
+        // catalog (the lossy stream sits next to lossless variants).
+        out.add('AAC');
+        if (scan.has_atmos) out.add('ATMOS');
+    }
+    return out;
+}
+
+// Pick the first format in the user's chain that this asset supports.
+function autoPickFormat(scan, idx) {
+    const avail = effectiveFormatsAvailable(scan, idx);
+    if (!avail.size) return 'AAC';
+    for (const c of formatChainState) {
+        if (c.enabled && avail.has(c.fmt)) return c.fmt;
+    }
+    if (avail.has('ALAC')) return 'ALAC';
+    if (avail.has('AAC')) return 'AAC';
+    return 'ATMOS';
+}
+
+function effectiveFormatChain() {
+    return formatChainState.filter(c => c.enabled).map(c => c.fmt);
+}
+
+// Render the per-track expansion panel (titles, durations, per-track
+// estimated size at the currently-selected Cap / Format).
+function renderTracksPanel(scan, idx) {
+    if (!trackExpandedByIdx.has(idx)) return '';
+    const tracks = scan.tracks || [];
+    if (!tracks.length) return '';
+    // Read the currently-selected Cap & Format from the rendered DOM.
+    const root = document.querySelector(`[data-idx="${idx}"]`);
+    let fmt = 'ALAC';
+    let hz = autoPickFromChain(scan, idx);
+    if (root) {
+        const fSel = root.querySelector('[data-format]');
+        const cSel = root.querySelector('[data-override]');
+        if (fSel && fSel.value) fmt = fSel.value;
+        if (cSel && cSel.value) hz = +cSel.value;
+    }
+    let bps = 0;
+    if (fmt === 'ALAC') bps = bandwidthForTier(scan, idx, hz || autoPickFromChain(scan, idx));
+    else bps = bandwidthForFormat(scan, idx, fmt);
+    const rows = tracks.map((t, i) => {
+        const sz = sizeBytes(bps, t.duration_ms || 0);
+        const num = t.track_number || (i + 1);
+        const title = (t.title || '').replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+        return `<tr>
+            <td class="py-0.5 pr-2 text-right text-slate-400 tabular-nums">${num}.</td>
+            <td class="py-0.5 pr-2 truncate" title="${title}">${title || '<em class="text-slate-400">untitled</em>'}</td>
+            <td class="py-0.5 pr-2 text-right text-slate-500 tabular-nums">${durationLabel(t.duration_ms)}</td>
+            <td class="py-0.5 text-right text-slate-700 dark:text-slate-300 tabular-nums">${sz ? formatBytes(sz) : '–'}</td>
+        </tr>`;
+    }).join('');
+    const totalSize = tracks.reduce((s, t) => s + sizeBytes(bps, t.duration_ms || 0), 0);
+    const totalDur = tracks.reduce((s, t) => s + (t.duration_ms || 0), 0);
+    const fmtLabel = fmt === 'ALAC' ? `${khzLabel(hz)} ALAC` : fmt;
+    return `
+        <div class="mt-2 rounded-md border border-slate-200 bg-slate-50/60 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/30">
+            <div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">
+                Per-track sizes at <strong>${fmtLabel}</strong>
+                · total ${durationLabel(totalDur)} · est. ${formatBytes(totalSize)}
+            </div>
+            <table class="w-full text-[11px]"><tbody>${rows}</tbody></table>
+        </div>`;
+}
+
+function renderScanResults(results) {
+    const box = $('scan-results');
+    box.innerHTML = '';
+    results.forEach((r, idx) => {
+        const item = document.createElement('div');
+        item.className = 'flex items-start gap-3 p-4';
+        item.dataset.idx = idx;
+        const cover = r.artwork_url
+            ? `<img src="${escapeHtml(r.artwork_url)}" alt="" class="h-14 w-14 rounded-md object-cover" loading="lazy">`
+            : `<div class="h-14 w-14 rounded-md bg-slate-200 dark:bg-slate-700 grid place-items-center text-slate-400"><i data-lucide="music-3" class="h-5 w-5"></i></div>`;
+        const titleLine = r.ok
+            ? `<div class="font-medium text-sm">${escapeHtml(r.artist || '?')} — <span class="text-slate-700 dark:text-slate-200">${escapeHtml(r.title || '(untitled)')}</span></div>`
+            : `<div class="font-medium text-sm text-rose-600 dark:text-rose-400">${escapeHtml(r.url)}</div>`;
+        const meta = r.ok
+            ? `<div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">${r.kind}${r.track_count ? ` · ${r.track_count} track${r.track_count === 1 ? '' : 's'}` : ''}${r.storefront ? ` · ${r.storefront}` : ''}</div>`
+            : `<div class="text-[11px] text-rose-500 mt-0.5">${escapeHtml(r.error || 'Scan failed')}</div>`;
+        // Effective tier list (verified-by-probe wins over inferred).
+        const tiers = effectiveTiers(r, idx);
+        const auto = autoPickFromChain(r, idx);
+        const fmtAvail = effectiveFormatsAvailable(r, idx);
+        const autoFmt = autoPickFormat(r, idx);
+        const overrideOptions = [
+            `<option value="">Auto (${auto ? khzLabel(auto) : 'AAC'})</option>`,
+            ...ALAC_TIERS_ALL.map(hz => {
+                const has = tiers.includes(hz);
+                return `<option value="${hz}"${has ? '' : ' disabled'}>${khzLabel(hz)}${has ? '' : ' (n/a)'}</option>`;
+            }),
+        ].join('');
+        const tiersChips = r.ok ? renderAvailableTiersChips(r, idx) : '';
+        const verified = verifiedByIdx.get(idx);
+        const probeBtn = r.ok
+            ? `<button type="button" data-verify class="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"><i data-lucide="${verified ? 'rotate-cw' : 'search-check'}" class="h-3 w-3"></i>${verified ? 'Re-verify' : 'Verify'}</button>`
+            : '';
+        // Show tracks toggle — only when we actually have track metadata.
+        const trackCount = (r.tracks || []).length;
+        const expanded = trackExpandedByIdx.has(idx);
+        const tracksBtn = (r.ok && trackCount > 0)
+            ? `<button type="button" data-tracks-toggle class="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" title="Show per-track sizes at the selected quality"><i data-lucide="${expanded ? 'chevron-up' : 'list'}" class="h-3 w-3"></i>${expanded ? 'Hide' : `${trackCount} track${trackCount === 1 ? '' : 's'}`}</button>`
+            : '';
+        const tracksPanel = r.ok ? renderTracksPanel(r, idx) : '';
+        item.innerHTML = `
+            ${cover}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        ${titleLine}
+                        ${meta}
+                        <div class="mt-1.5 flex flex-wrap gap-1.5">${qualityBadge(r)}</div>
+                        ${tiersChips}
+                    </div>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs text-slate-500 dark:text-slate-400">
+                        <input type="checkbox" data-include class="h-4 w-4 rounded" ${r.ok ? 'checked' : ''}>
+                        Include
+                    </label>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-slate-500 dark:text-slate-400">Format:</span>
+                    <select data-format class="cfg-input-sm rounded border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">
+                        <option value="ALAC"${fmtAvail.has('ALAC') ? '' : ' disabled'}>ALAC${fmtAvail.has('ALAC') ? '' : ' (n/a)'}</option>
+                        <option value="ATMOS"${fmtAvail.has('ATMOS') ? '' : ' disabled'}>ATMOS${fmtAvail.has('ATMOS') ? '' : ' (n/a)'}</option>
+                        <option value="AAC"${fmtAvail.has('AAC') ? '' : ' disabled'}>AAC${fmtAvail.has('AAC') ? '' : ' (n/a)'}</option>
+                    </select>
+                    <span class="text-slate-500 dark:text-slate-400">Cap:</span>
+                    <select data-override class="cfg-input-sm rounded border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">${overrideOptions}</select>
+                    ${probeBtn}
+                    ${tracksBtn}
+                    <a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" class="ml-auto text-[11px] text-slate-500 hover:underline">open in Apple Music ↗</a>
+                </div>
+                ${tracksPanel}
+            </div>
+        `;
+        // Pre-select format from the format chain.
+        const fmtSel = item.querySelector('[data-format]');
+        if (fmtSel) fmtSel.value = autoFmt;
+        // Wire per-item buttons + dropdowns.
+        const vbtn = item.querySelector('[data-verify]');
+        if (vbtn) vbtn.addEventListener('click', () => probeOne(idx, vbtn));
+        const tbtn = item.querySelector('[data-tracks-toggle]');
+        if (tbtn) tbtn.addEventListener('click', () => {
+            if (trackExpandedByIdx.has(idx)) trackExpandedByIdx.delete(idx);
+            else trackExpandedByIdx.add(idx);
+            renderScanResults(scanResults);
+        });
+        // Refresh tracks panel sizes when Cap/Format change.
+        const cSel = item.querySelector('[data-override]');
+        if (cSel) cSel.addEventListener('change', () => {
+            if (trackExpandedByIdx.has(idx)) renderScanResults(scanResults);
+        });
+        if (fmtSel) fmtSel.addEventListener('change', () => {
+            if (trackExpandedByIdx.has(idx)) renderScanResults(scanResults);
+        });
+        box.appendChild(item);
+    });
+    if (window.lucide) window.lucide.createIcons();
+    updateScanConfirmCount();
+}
+
+// ---------------------------------------------------------------------------
+// Priority chain editor
+// ---------------------------------------------------------------------------
+function renderChainEditor() {
+    const box = $('chain-editor');
+    box.innerHTML = '';
+    chainState.forEach((entry, i) => {
+        const cls = entry.enabled
+            ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+            : 'bg-transparent text-slate-400 line-through ring-1 ring-slate-200 dark:text-slate-600 dark:ring-slate-800';
+        const chip = document.createElement('span');
+        chip.className = `inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${cls}`;
+        chip.innerHTML = `
+            <button type="button" data-up title="Move up" class="px-0.5 hover:text-brand-500 disabled:opacity-30" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" data-toggle title="Toggle on/off" class="px-1">${i + 1}. ${khzLabel(entry.hz)}</button>
+            <button type="button" data-down title="Move down" class="px-0.5 hover:text-brand-500 disabled:opacity-30" ${i === chainState.length - 1 ? 'disabled' : ''}>↓</button>
+        `;
+        chip.querySelector('[data-up]').addEventListener('click', () => {
+            if (i === 0) return;
+            [chainState[i - 1], chainState[i]] = [chainState[i], chainState[i - 1]];
+            renderChainEditor();
+            renderScanResults(scanResults); // update auto-pick highlights
+        });
+        chip.querySelector('[data-down]').addEventListener('click', () => {
+            if (i === chainState.length - 1) return;
+            [chainState[i + 1], chainState[i]] = [chainState[i], chainState[i + 1]];
+            renderChainEditor();
+            renderScanResults(scanResults);
+        });
+        chip.querySelector('[data-toggle]').addEventListener('click', () => {
+            chainState[i].enabled = !chainState[i].enabled;
+            renderChainEditor();
+            renderScanResults(scanResults);
+        });
+        box.appendChild(chip);
     });
 }
 
-// Start polling immediately and then every 1 second for better responsiveness
-updateLogs();
-setInterval(updateLogs, 1000);
+function effectiveChain() {
+    return chainState.filter(c => c.enabled).map(c => c.hz);
+}
 
-// Check for saved credentials when page loads
-checkSavedCredentials();
+// Apply the chain's auto-pick to every item's Cap dropdown.
+function applyChainToAllItems() {
+    $('scan-results').querySelectorAll('[data-idx]').forEach(it => {
+        const idx = +it.dataset.idx;
+        const r = scanResults[idx];
+        if (!r) return;
+        const sel = it.querySelector('[data-override]');
+        if (!sel) return;
+        const pick = autoPickFromChain(r, idx);
+        if (pick) sel.value = String(pick);
+    });
+}
 
-// Load download folders
-function loadDownloadFolders() {
-    axios.get('/get_download_folders')
-        .then(res => {
-            if (res.data.status === 'ok') {
-                document.getElementById('alac-folder').textContent = res.data.folders.alac;
-                document.getElementById('atmos-folder').textContent = res.data.folders.atmos;
-                document.getElementById('aac-folder').textContent = res.data.folders.aac;
-                document.getElementById('download-folders-info').style.display = 'block';
+// ---------------------------------------------------------------------------
+// Format chain editor (ALAC/ATMOS/AAC)
+// ---------------------------------------------------------------------------
+function renderFormatChainEditor() {
+    const box = $('fmt-chain-editor');
+    box.innerHTML = '';
+    formatChainState.forEach((entry, i) => {
+        const cls = entry.enabled
+            ? 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+            : 'bg-transparent text-slate-400 line-through ring-1 ring-slate-200 dark:text-slate-600 dark:ring-slate-800';
+        const chip = document.createElement('span');
+        chip.className = `inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${cls}`;
+        chip.innerHTML = `
+            <button type="button" data-up title="Move up" class="px-0.5 hover:text-brand-500 disabled:opacity-30" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" data-toggle title="Toggle on/off" class="px-1">${i + 1}. ${entry.fmt}</button>
+            <button type="button" data-down title="Move down" class="px-0.5 hover:text-brand-500 disabled:opacity-30" ${i === formatChainState.length - 1 ? 'disabled' : ''}>↓</button>
+        `;
+        chip.querySelector('[data-up]').addEventListener('click', () => {
+            if (i === 0) return;
+            [formatChainState[i - 1], formatChainState[i]] = [formatChainState[i], formatChainState[i - 1]];
+            renderFormatChainEditor();
+            renderScanResults(scanResults);
+        });
+        chip.querySelector('[data-down]').addEventListener('click', () => {
+            if (i === formatChainState.length - 1) return;
+            [formatChainState[i + 1], formatChainState[i]] = [formatChainState[i], formatChainState[i + 1]];
+            renderFormatChainEditor();
+            renderScanResults(scanResults);
+        });
+        chip.querySelector('[data-toggle]').addEventListener('click', () => {
+            formatChainState[i].enabled = !formatChainState[i].enabled;
+            renderFormatChainEditor();
+            renderScanResults(scanResults);
+        });
+        box.appendChild(chip);
+    });
+}
+
+// Apply the format chain to every item's Format dropdown.
+function applyFormatChainToAllItems() {
+    $('scan-results').querySelectorAll('[data-idx]').forEach(it => {
+        const idx = +it.dataset.idx;
+        const r = scanResults[idx];
+        if (!r) return;
+        const sel = it.querySelector('[data-format]');
+        if (!sel) return;
+        const pick = autoPickFormat(r, idx);
+        if (pick) sel.value = pick;
+    });
+}
+
+function updateScanConfirmCount() {
+    const items = $('scan-results').querySelectorAll('[data-idx]');
+    let n = 0;
+    items.forEach(it => { if (it.querySelector('[data-include]').checked) n++; });
+    $('scan-confirm-text').textContent = `Confirm ${n} item${n === 1 ? '' : 's'}`;
+    $('scan-confirm').disabled = n === 0;
+}
+$('scan-results').addEventListener('change', updateScanConfirmCount);
+
+function showScanModal() {
+    const m = $('scan-modal');
+    m.classList.remove('hidden');
+    m.style.display = 'flex';
+}
+function hideScanModal() {
+    const m = $('scan-modal');
+    m.classList.add('hidden');
+    m.style.display = 'none';
+}
+$('scan-modal-close').addEventListener('click', hideScanModal);
+$('scan-cancel').addEventListener('click', hideScanModal);
+$('scan-modal').addEventListener('click', (e) => { if (e.target === $('scan-modal')) hideScanModal(); });
+
+$('scan-btn').addEventListener('click', () => {
+    const urls = parseUrls($('link-box').value);
+    if (!urls.length) return;
+    $('scan-btn').disabled = true;
+    $('scan-btn-text').textContent = 'Scanning…';
+    $('scan-results').innerHTML = '<div class="px-5 py-12 text-center text-sm text-slate-500"><div class="h-8 w-8 mx-auto mb-3 animate-spin rounded-full border-2 border-slate-200 border-t-brand-500"></div>Scanning ' + urls.length + ' URL' + (urls.length === 1 ? '' : 's') + '…</div>';
+    $('scan-summary').textContent = `Scanning ${urls.length} URL${urls.length === 1 ? '' : 's'}…`;
+    showScanModal();
+    axios.post('/scan', { urls }, { headers: { 'Content-Type': 'application/json' } })
+        .then(r => {
+            $('scan-btn-text').textContent = 'Scan & confirm';
+            refreshUrlCount();
+            if (r.data.status !== 'ok') {
+                hideScanModal();
+                showToast('Scan failed: ' + (r.data.msg || 'unknown'), 'err');
+                return;
+            }
+            scanResults = r.data.results;
+            scanFallbackChain = r.data.fallback_chain || scanFallbackChain;
+            // Reset verified cache on a fresh scan and rebuild the chain
+            // editor from the user's saved Settings chain. Tiers in
+            // ALAC_TIERS_ALL but absent from the saved chain are appended
+            // disabled at the end so the user can still re-enable them.
+            verifiedByIdx.clear();
+            const seen = new Set();
+            chainState = [];
+            for (const hz of scanFallbackChain) {
+                if (ALAC_TIERS_ALL.includes(hz) && !seen.has(hz)) {
+                    chainState.push({ hz, enabled: true });
+                    seen.add(hz);
+                }
+            }
+            for (const hz of ALAC_TIERS_ALL) {
+                if (!seen.has(hz)) chainState.push({ hz, enabled: false });
+            }
+            renderChainEditor();
+            // Reset format chain to defaults on every fresh scan, then render.
+            formatChainState = FORMAT_OPTIONS_ALL.map(f => ({ fmt: f, enabled: true }));
+            renderFormatChainEditor();
+            // Reset track-expansion state — nothing should be open between scans.
+            trackExpandedByIdx.clear();
+            $('scan-strict').checked = !!r.data.strict;
+            $('scan-skip-exists').checked = !!r.data.skip_if_exists;
+            const okCount = scanResults.filter(x => x.ok).length;
+            $('scan-summary').textContent = `Scanned ${scanResults.length} URL${scanResults.length === 1 ? '' : 's'} · ${okCount} resolved · chain: ${scanFallbackChain.map(x => (x / 1000).toFixed(1).replace(/\.0$/, '')).join(' → ')} kHz`;
+            renderScanResults(scanResults);
+            // Auto-probe right after rendering, if the toggle is on. We
+            // run this on a small delay so the modal paints the
+            // `~ inferred` chips first; users get instant feedback then
+            // the chips upgrade to `✓ verified` as Apple's CDN responds.
+            // Queue-level Auto-verify checkbox is the source of truth;
+            // localStorage just persists across reloads.
+            const dlAv = $('dl-auto-verify');
+            const autoVerify = dlAv ? !!dlAv.checked : (loadModalPrefs().autoVerify !== false);
+            if (autoVerify && okCount > 0) {
+                setTimeout(() => probeAll({ silent: true }), 200);
             }
         })
-        .catch(err => {
-            console.log('Error loading download folders:', err);
+        .catch(() => {
+            hideScanModal();
+            $('scan-btn-text').textContent = 'Scan & confirm';
+            refreshUrlCount();
+            showToast('Scan request failed', 'err');
         });
-}
-
-// Load download folders on page load
-loadDownloadFolders();
-
-// Handle Special Audio checkbox toggle
-document.getElementById('special-audio').addEventListener('change', function() {
-    const formatOptions = document.getElementById('format-options');
-    const radioButtons = formatOptions.querySelectorAll('input[type="radio"]');
-    
-    if (this.checked) {
-        formatOptions.style.opacity = '1';
-        radioButtons.forEach(radio => radio.disabled = false);
-    } else {
-        formatOptions.style.opacity = '0.5';
-        radioButtons.forEach(radio => radio.disabled = true);
-    }
 });
 
-// 2FA Modal Functionality
-function show2FAModal() {
-    const modal = document.getElementById('twofa-modal');
-    const codeInput = document.getElementById('twofa-code');
-    modal.classList.remove('d-none');
-    setTimeout(() => codeInput.focus(), 100);
+// Quality (ALAC kHz) chain controls.
+$('chain-apply').addEventListener('click', applyChainToAllItems);
+$('chain-reset').addEventListener('click', () => {
+    chainState = scanFallbackChain.map(hz => ({ hz, enabled: true }));
+    renderChainEditor();
+    renderScanResults(scanResults);
+});
+
+// Format chain controls.
+$('fmt-chain-apply').addEventListener('click', applyFormatChainToAllItems);
+$('fmt-chain-reset').addEventListener('click', () => {
+    formatChainState = FORMAT_OPTIONS_ALL.map(f => ({ fmt: f, enabled: true }));
+    renderFormatChainEditor();
+    renderScanResults(scanResults);
+});
+
+// Queue-level Skip-MV + Auto-verify checkboxes. They are the single
+// source of truth for both the Quick Add and the Scan-then-confirm
+// flows. We initialise from localStorage (both default ON) and
+// persist any change immediately so the toggle state survives page
+// reloads without needing a server round-trip.
+(function initQueueLevelToggles() {
+    const prefs = loadModalPrefs();
+    const av = $('dl-auto-verify');
+    if (av) {
+        av.checked = prefs.autoVerify !== false; // default true
+        av.addEventListener('change', () => saveModalPrefs({ autoVerify: av.checked }));
+    }
+    const sm = $('dl-skip-mv');
+    if (sm) {
+        sm.checked = prefs.skipMv !== false; // default true
+        sm.addEventListener('change', () => saveModalPrefs({ skipMv: sm.checked }));
+    }
+})();
+
+// ---------------------------------------------------------------------------
+// Deep probe (real availability via AMD --debug)
+// ---------------------------------------------------------------------------
+async function probeOne(idx, btn) {
+    const r = scanResults[idx];
+    if (!r || !r.ok) return;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="h-3 w-3 animate-spin"></i>Verifying…';
+        if (window.lucide) window.lucide.createIcons();
+    }
+    try {
+        const resp = await axios.post('/probe', { urls: [r.url] }, { headers: { 'Content-Type': 'application/json' } });
+        if (resp.data.status !== 'ok') {
+            showToast(resp.data.msg || 'Probe failed', 'err');
+            return;
+        }
+        const result = (resp.data.results || [])[0];
+        if (!result || !result.ok) {
+            const errMsg = (result && result.error) ? result.error.split('\n')[0] : 'No variants returned';
+            showToast(`Verify failed: ${errMsg}`, 'err');
+        } else {
+            verifiedByIdx.set(idx, result.report || {});
+            showToast(`Verified ${r.title || r.url} (${result.duration_s}s)`, 'ok');
+        }
+    } catch (e) {
+        showToast('Probe request failed', 'err');
+    } finally {
+        renderScanResults(scanResults);
+    }
 }
 
-function hide2FAModal() {
-    const modal = document.getElementById('twofa-modal');
-    const codeInput = document.getElementById('twofa-code');
-    modal.classList.add('d-none');
-    codeInput.value = '';
+async function probeAll(opts) {
+    opts = opts || {};
+    const silent = !!opts.silent;
+    const indices = scanResults.map((r, i) => r.ok ? i : -1).filter(i => i >= 0);
+    if (!indices.length) return;
+    const btn = $('probe-all-btn');
+    btn.disabled = true;
+    const oldHtml = btn.innerHTML;
+    let done = 0;
+    const update = () => {
+        $('probe-all-text').textContent =
+            (silent ? 'Auto-verifying' : 'Verifying') + ` ${done}/${indices.length}…`;
+    };
+    update();
+    try {
+        const urls = indices.map(i => scanResults[i].url);
+        const resp = await axios.post('/probe', { urls }, { headers: { 'Content-Type': 'application/json' } });
+        if (resp.data.status !== 'ok') {
+            if (!silent) showToast(resp.data.msg || 'Probe failed', 'err');
+            return;
+        }
+        (resp.data.results || []).forEach((res, k) => {
+            done = k + 1;
+            update();
+            if (res && res.ok) {
+                verifiedByIdx.set(indices[k], res.report || {});
+            }
+        });
+        const ok = (resp.data.results || []).filter(r => r && r.ok).length;
+        if (!silent) {
+            showToast(`Verified ${ok}/${indices.length} items against Apple's CDN`, ok === indices.length ? 'ok' : 'warn');
+        } else if (ok < indices.length) {
+            // Surface a single quiet warning for partial auto-verify failures
+            // — but never spam on success.
+            showToast(`Auto-verified ${ok}/${indices.length} (rest fall back to inferred)`, 'warn');
+        }
+    } catch (e) {
+        if (!silent) showToast('Probe request failed', 'err');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+        if (window.lucide) window.lucide.createIcons();
+        renderScanResults(scanResults);
+    }
 }
 
-// Submit 2FA Code
-document.getElementById('submit-2fa').addEventListener('click', function() {
-    const code = document.getElementById('twofa-code').value.trim();
-    
-    if (!code) {
-        alert('Please enter your 2FA code');
+$('probe-all-btn').addEventListener('click', () => probeAll({ silent: false }));
+
+$('scan-confirm').addEventListener('click', () => {
+    const items = [];
+    $('scan-results').querySelectorAll('[data-idx]').forEach(it => {
+        const include = it.querySelector('[data-include]').checked;
+        if (!include) return;
+        const idx = +it.dataset.idx;
+        const r = scanResults[idx];
+        const fmt = it.querySelector('[data-format]').value || 'ALAC';
+        const overrideRaw = it.querySelector('[data-override]').value;
+        const item = { url: r.url, format: fmt };
+        if (overrideRaw) item.override_max_hz = +overrideRaw;
+        items.push(item);
+    });
+    if (!items.length) return;
+    const lyricsMode = $('lyrics-mode').value || '';
+    const skipMv = $('dl-skip-mv') ? !!$('dl-skip-mv').checked : true;
+    const payload = {
+        items,
+        strict: $('scan-strict').checked,
+        skip_if_exists: $('scan-skip-exists').checked,
+        global_chain: effectiveChain(),
+        global_format_chain: effectiveFormatChain(),
+        lyrics_mode: lyricsMode,
+        skip_mv: skipMv,
+    };
+    $('scan-confirm').disabled = true;
+    axios.post('/queue/start', payload, { headers: { 'Content-Type': 'application/json' } })
+        .then(r => {
+            if (r.data.status !== 'ok') {
+                showToast(r.data.msg || 'Queue failed', 'err');
+                $('scan-confirm').disabled = false;
+                return;
+            }
+            showToast(`Queued ${r.data.queued} job${r.data.queued === 1 ? '' : 's'}`, 'ok');
+            hideScanModal();
+            $('link-box').value = '';
+            refreshUrlCount();
+        })
+        .catch(() => {
+            $('scan-confirm').disabled = false;
+            showToast('Queue request failed', 'err');
+        });
+});
+
+// Quick add: skip the scan modal entirely. Skip-MV honors the
+// queue-level checkbox (defaults ON) so a pasted music-video URL
+// doesn't silently jam the queue.
+$('quick-add-btn').addEventListener('click', () => {
+    const urls = parseUrls($('link-box').value);
+    if (!urls.length) return;
+    const fmt = chosenFormat();
+    const items = urls.map(u => ({ url: u, format: fmt }));
+    const skipMv = $('dl-skip-mv') ? !!$('dl-skip-mv').checked : true;
+    axios.post('/queue/start', { items, skip_mv: skipMv }, { headers: { 'Content-Type': 'application/json' } })
+        .then(r => {
+            if (r.data.status !== 'ok') return showToast(r.data.msg || 'Queue failed', 'err');
+            showToast(`Queued ${r.data.queued} job${r.data.queued === 1 ? '' : 's'}`, 'ok');
+            $('link-box').value = '';
+            refreshUrlCount();
+        })
+        .catch(() => showToast('Queue request failed', 'err'));
+});
+
+// ============================================================================
+// Queue rendering + SSE
+// ============================================================================
+const STATUS_BADGES = {
+    queued:   { c: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',          icon: 'clock',          label: 'Queued' },
+    running:  { c: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',                                icon: 'loader',         label: 'Running' },
+    done:     { c: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',                    icon: 'check-circle-2', label: 'Done' },
+    failed:   { c: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',                              icon: 'alert-circle',   label: 'Failed' },
+    canceled: { c: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',                          icon: 'circle-stop',    label: 'Canceled' },
+    skipped:  { c: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',          icon: 'fast-forward',   label: 'Skipped' }
+};
+
+function jobCardHtml(job) {
+    const meta = job.metadata || {};
+    const cover = meta.artwork_url
+        ? `<img src="${escapeHtml(meta.artwork_url)}" alt="" class="h-12 w-12 rounded-md object-cover" loading="lazy">`
+        : `<div class="h-12 w-12 rounded-md bg-slate-200 dark:bg-slate-700 grid place-items-center text-slate-400"><i data-lucide="music-3" class="h-4 w-4"></i></div>`;
+    const badge = STATUS_BADGES[job.status] || STATUS_BADGES.queued;
+    const titleLine = meta.title
+        ? `<div class="font-medium text-sm truncate">${escapeHtml(meta.artist || '')} — ${escapeHtml(meta.title)}</div>`
+        : `<div class="font-mono text-xs truncate">${escapeHtml(job.url)}</div>`;
+    const fmtLabel = job.format + (job.requested_max ? ` · ${(job.requested_max / 1000).toFixed(1).replace(/\.0$/, '')} kHz` : '');
+    const showLog = job.status === 'running' || job.status === 'failed';
+    const logLines = (job.log_lines || []).slice(-80);
+    const summaryLines = (job.quality_summary || []).slice(-40);
+    const allLines = logLines.concat(summaryLines);
+    const errLine = job.error
+        ? `<div class="mt-2 text-[11px] text-rose-600 dark:text-rose-400">${escapeHtml(job.error)}</div>`
+        : '';
+    const folderBtn = job.save_folder
+        ? `<button type="button" class="text-[11px] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-job-folder="${escapeHtml(job.save_folder)}">📂 Open</button>`
+        : '';
+    let actions = '';
+    if (job.status === 'queued') {
+        actions = `<button type="button" class="text-[11px] text-slate-500 hover:text-rose-600" data-job-cancel="${job.id}">Cancel</button>`;
+    } else if (job.status === 'running') {
+        actions = `<button type="button" class="text-[11px] text-rose-600 hover:underline" data-job-cancel="${job.id}">Stop</button>`;
+    } else {
+        actions = `
+            ${job.status === 'done' ? `<button type="button" class="text-[11px] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-job-reprobe="${job.id}">Re-probe</button>` : ''}
+            <button type="button" class="text-[11px] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-job-retry="${job.id}">Retry</button>
+            <button type="button" class="text-[11px] text-slate-500 hover:text-rose-600" data-job-remove="${job.id}">Remove</button>
+        `;
+    }
+    return `
+    <div class="px-5 py-4" data-job-card="${job.id}">
+        <div class="flex items-start gap-3">
+            ${cover}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        ${titleLine}
+                        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${badge.c}"><i data-lucide="${badge.icon}" class="h-3 w-3 ${job.status === 'running' ? 'animate-spin' : ''}"></i> ${badge.label}</span>
+                            <span>${escapeHtml(fmtLabel)}</span>
+                            ${meta.kind ? `<span>· ${escapeHtml(meta.kind)}</span>` : ''}
+                            ${meta.track_count ? `<span>· ${meta.track_count} tracks</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        ${folderBtn}
+                        ${actions}
+                    </div>
+                </div>
+                ${errLine}
+                ${(showLog || summaryLines.length) ? `
+                <details ${job.status === 'running' ? 'open' : ''} class="mt-2">
+                    <summary class="cursor-pointer text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">${job.status === 'done' ? 'Show log + quality summary' : 'Show log'}</summary>
+                    <div class="log-box mt-2 max-h-64 overflow-y-auto rounded-lg bg-slate-50 dark:bg-slate-950/50 px-3 py-2 text-[12px]" data-job-log="${job.id}">${
+                        allLines.map(l => `<div class="${classifyLogLine(l) ? logColor(classifyLogLine(l)) : ''}">${escapeHtml(l)}</div>`).join('')
+                    }</div>
+                </details>` : ''}
+            </div>
+        </div>
+    </div>`;
+}
+
+function logColor(kind) {
+    const map = {
+        ok: 'text-emerald-600 dark:text-emerald-400',
+        err: 'text-rose-600 dark:text-rose-400',
+        warn: 'text-amber-600 dark:text-amber-400',
+        info: 'text-sky-600 dark:text-sky-400'
+    };
+    return map[kind] || '';
+}
+
+const queueState = { jobs: [] };
+
+function renderQueue() {
+    const list = $('queue-list');
+    if (!queueState.jobs.length) {
+        list.innerHTML = '';
+        list.appendChild($('queue-empty') || (() => { const d = document.createElement('div'); d.id = 'queue-empty'; return d; })());
+        $('queue-summary').textContent = 'Waiting for jobs.';
+        $('clear-completed-btn').classList.add('hidden');
         return;
     }
-    
-    const wrapperLogs = document.getElementById('wrapper-logs');
-    wrapperLogs.innerHTML += `<div style="color: #17a2b8;">> 🔐 Submitting 2FA code...</div>`;
-    wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
-    
-    axios.post('/submit_2fa', new URLSearchParams({twofa_code: code}))
-        .then(res => {
-            if (res.data.status === 'ok') {
-                wrapperLogs.innerHTML += `<div style="color: #28a745;">> ✅ ${res.data.msg}</div>`;
-                hide2FAModal();
-            } else {
-                wrapperLogs.innerHTML += `<div style="color: #dc3545;">> ❌ ${res.data.msg}</div>`;
-            }
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
+    // Order: running first, then queued, then completed/failed/canceled (newest finished first)
+    const order = ['running', 'queued', 'done', 'failed', 'canceled', 'skipped'];
+    const sorted = queueState.jobs.slice().sort((a, b) => {
+        const da = order.indexOf(a.status);
+        const db = order.indexOf(b.status);
+        if (da !== db) return da - db;
+        if ((a.status === 'done' || a.status === 'failed' || a.status === 'canceled' || a.status === 'skipped')) {
+            return (b.finished_at || 0) - (a.finished_at || 0);
+        }
+        return 0;
+    });
+    list.innerHTML = sorted.map(jobCardHtml).join('');
+    if (window.lucide) window.lucide.createIcons();
+    const counts = { queued: 0, running: 0, done: 0, failed: 0, canceled: 0, skipped: 0 };
+    queueState.jobs.forEach(j => { counts[j.status] = (counts[j.status] || 0) + 1; });
+    $('queue-summary').textContent =
+        `${counts.running ? counts.running + ' running · ' : ''}${counts.queued ? counts.queued + ' queued · ' : ''}${counts.done} done · ${counts.failed + counts.canceled} failed/canceled${counts.skipped ? ' · ' + counts.skipped + ' skipped' : ''}`;
+    $('clear-completed-btn').classList.toggle('hidden', !(counts.done || counts.failed || counts.canceled || counts.skipped));
+}
+
+function upsertJob(job) {
+    const i = queueState.jobs.findIndex(j => j.id === job.id);
+    if (i >= 0) queueState.jobs[i] = job;
+    else queueState.jobs.push(job);
+}
+
+// ============================================================================
+// Library (Downloaded songs) panel
+// ============================================================================
+function fmtDuration(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    const m = Math.floor(s / 60);
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+}
+
+function fmtKHz(hz) {
+    if (!hz) return '?';
+    return (hz / 1000).toFixed(hz % 1000 === 0 ? 0 : 1) + ' kHz';
+}
+
+function fmtBits(b) {
+    return b ? (b + '-bit') : '';
+}
+
+function fmtChannels(c) {
+    return ({ 1: 'mono', 2: 'stereo', 6: '5.1', 8: '7.1' })[c] || ((c || '?') + 'ch');
+}
+
+function albumQualityLabel(tracks) {
+    // Pick a representative quality string (highest tier seen).
+    if (!tracks || !tracks.length) return '';
+    let bestSr = 0, bestBits = 0, codec = '';
+    tracks.forEach(t => {
+        if (t.sample_rate_hz > bestSr) bestSr = t.sample_rate_hz;
+        if (t.bits_per_sample > bestBits) bestBits = t.bits_per_sample;
+        if (!codec) codec = t.codec;
+    });
+    const parts = [];
+    if (codec) parts.push(codec.toUpperCase());
+    if (bestSr) parts.push(fmtKHz(bestSr));
+    if (bestBits) parts.push(fmtBits(bestBits));
+    return parts.join(' · ');
+}
+
+function albumTotalSize(tracks) {
+    return (tracks || []).reduce((a, t) => a + (t.size_bytes || 0), 0);
+}
+
+function albumTotalDuration(tracks) {
+    return (tracks || []).reduce((a, t) => a + (t.duration_s || 0), 0);
+}
+
+function albumCardHtml(job) {
+    const meta = job.metadata || {};
+    const tracks = job.tracks || [];
+    const cover = meta.artwork_url
+        ? `<img src="${escapeHtml(meta.artwork_url)}" alt="" class="h-16 w-16 rounded-lg object-cover shadow-sm" loading="lazy">`
+        : `<div class="h-16 w-16 rounded-lg bg-slate-200 dark:bg-slate-700 grid place-items-center text-slate-400"><i data-lucide="disc-3" class="h-6 w-6"></i></div>`;
+    const title = meta.title || job.url;
+    const artist = meta.artist || '';
+    const totalDur = albumTotalDuration(tracks);
+    const totalDurH = Math.floor(totalDur / 3600);
+    const totalDurM = Math.floor((totalDur % 3600) / 60);
+    const totalDurStr = totalDurH > 0 ? `${totalDurH}h ${totalDurM}m` : `${totalDurM}m`;
+    const albumQuality = albumQualityLabel(tracks);
+    const albumSize = humanBytes(albumTotalSize(tracks));
+    const folderBtn = job.save_folder
+        ? `<button type="button" class="text-[11px] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-job-folder="${escapeHtml(job.save_folder)}">📂 Open folder</button>`
+        : '';
+
+    let trackTable;
+    if (!tracks.length) {
+        trackTable = `<div class="px-4 py-6 text-center text-xs text-slate-500 dark:text-slate-400">No tracks could be probed (ffprobe unavailable, or files moved).</div>`;
+    } else {
+        const rows = tracks.map((t, i) => {
+            const ext = t.filename.replace(/^.*\./, '').toLowerCase();
+            return `
+                <tr class="border-t border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td class="px-3 py-1.5 text-slate-500 dark:text-slate-400 tabular-nums">${i + 1}</td>
+                    <td class="px-3 py-1.5 max-w-[28rem] truncate" title="${escapeHtml(t.path)}">${escapeHtml(t.filename)}</td>
+                    <td class="px-3 py-1.5 text-slate-600 dark:text-slate-300 uppercase">${escapeHtml(t.codec || '')}${t.bits_per_sample ? ' ' + t.bits_per_sample + 'b' : ''}</td>
+                    <td class="px-3 py-1.5 tabular-nums">${fmtKHz(t.sample_rate_hz)}</td>
+                    <td class="px-3 py-1.5 tabular-nums font-semibold">${t.bit_rate_kbps ? t.bit_rate_kbps + ' kbps' : '—'}</td>
+                    <td class="px-3 py-1.5 text-slate-600 dark:text-slate-300">${fmtChannels(t.channels)}</td>
+                    <td class="px-3 py-1.5 tabular-nums">${fmtDuration(t.duration_s)}</td>
+                    <td class="px-3 py-1.5 tabular-nums text-slate-500 dark:text-slate-400">${humanBytes(t.size_bytes || 0)}</td>
+                </tr>
+            `;
+        }).join('');
+        trackTable = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-xs">
+                    <thead class="bg-slate-50 dark:bg-slate-800/40 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <tr>
+                            <th class="px-3 py-2 text-left">#</th>
+                            <th class="px-3 py-2 text-left">Track</th>
+                            <th class="px-3 py-2 text-left">Codec</th>
+                            <th class="px-3 py-2 text-left">Sample rate</th>
+                            <th class="px-3 py-2 text-left">Bit rate</th>
+                            <th class="px-3 py-2 text-left">Channels</th>
+                            <th class="px-3 py-2 text-left">Duration</th>
+                            <th class="px-3 py-2 text-left">Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    return `
+        <details class="library-album group" data-job-id="${job.id}">
+            <summary class="flex items-center gap-4 p-4 cursor-pointer list-none hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                ${cover}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2">
+                        <span class="font-semibold text-sm truncate">${escapeHtml(title)}</span>
+                        ${artist ? `<span class="text-[11px] text-slate-500 dark:text-slate-400 truncate">— ${escapeHtml(artist)}</span>` : ''}
+                    </div>
+                    <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span><span class="font-semibold text-slate-700 dark:text-slate-200">${tracks.length}</span> track${tracks.length === 1 ? '' : 's'}</span>
+                        <span>· ${albumSize}</span>
+                        <span>· ${totalDurStr}</span>
+                        ${albumQuality ? `<span>· <span class="font-medium text-emerald-700 dark:text-emerald-300">${escapeHtml(albumQuality)}</span></span>` : ''}
+                        ${job.format ? `<span>· ${escapeHtml(job.format)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    ${folderBtn}
+                    <button type="button" class="text-[11px] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" data-job-reprobe="${job.id}">Re-probe</button>
+                    <i data-lucide="chevron-down" class="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180"></i>
+                </div>
+            </summary>
+            ${trackTable}
+        </details>
+    `;
+}
+
+function renderLibrary() {
+    const section = $('library-section');
+    const list = $('library-list');
+    const summary = $('library-summary');
+    const completed = queueState.jobs
+        .filter(j => j.status === 'done')
+        .sort((a, b) => (b.finished_at || 0) - (a.finished_at || 0));
+    if (!completed.length) {
+        section.classList.add('hidden');
+        return;
+    }
+    section.classList.remove('hidden');
+    const filter = ($('library-filter')?.value || '').toLowerCase().trim();
+    const visible = filter
+        ? completed.filter(j => {
+            const meta = j.metadata || {};
+            return (meta.title || '').toLowerCase().includes(filter)
+                || (meta.artist || '').toLowerCase().includes(filter)
+                || (j.tracks || []).some(t => (t.filename || '').toLowerCase().includes(filter));
         })
-        .catch(err => {
-            wrapperLogs.innerHTML += `<div style="color: #dc3545;">> ❌ Failed to submit 2FA code</div>`;
-            wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
+        : completed;
+    list.innerHTML = visible.map(albumCardHtml).join('');
+    if (window.lucide) window.lucide.createIcons();
+
+    const totalTracks = completed.reduce((a, j) => a + (j.tracks || []).length, 0);
+    const totalSize = completed.reduce((a, j) => a + albumTotalSize(j.tracks), 0);
+    summary.textContent =
+        `${completed.length} album${completed.length === 1 ? '' : 's'} · ${totalTracks} track${totalTracks === 1 ? '' : 's'} · ${humanBytes(totalSize)}` +
+        (filter ? ` · ${visible.length} matching "${filter}"` : '');
+}
+
+const _libraryFilterEl = $('library-filter');
+if (_libraryFilterEl) _libraryFilterEl.addEventListener('input', renderLibrary);
+
+const _libraryExpandBtn = $('library-expand-all');
+if (_libraryExpandBtn) _libraryExpandBtn.addEventListener('click', () => {
+    const all = $('library-list').querySelectorAll('details.library-album');
+    const anyClosed = Array.from(all).some(d => !d.open);
+    all.forEach(d => { d.open = anyClosed; });
+    _libraryExpandBtn.textContent = anyClosed ? 'Collapse all' : 'Expand all';
+});
+
+function appendJobLogLines(id, lines) {
+    const job = queueState.jobs.find(j => j.id === id);
+    if (job) job.log_lines = (job.log_lines || []).concat(lines).slice(-300);
+    const box = document.querySelector(`[data-job-log="${CSS.escape(id)}"]`);
+    if (box) {
+        lines.forEach(l => {
+            const div = document.createElement('div');
+            const kind = classifyLogLine(l);
+            if (kind) div.className = logColor(kind);
+            div.textContent = l;
+            box.appendChild(div);
         });
+        box.scrollTop = box.scrollHeight;
+    }
+}
+
+// SSE connection
+function connectSSE() {
+    if (!window.EventSource) {
+        $('sse-indicator').innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span> Polling';
+        // Fallback: poll /jobs every 2 s
+        setInterval(() => axios.get('/jobs').then(r => {
+            if (r.data.status === 'ok') { queueState.jobs = r.data.jobs; renderQueue(); renderLibrary(); }
+        }).catch(() => {}), 2000);
+        return;
+    }
+    const es = new EventSource('/jobs/stream');
+    es.onopen = () => {
+        $('sse-indicator').innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Live';
+    };
+    es.onerror = () => {
+        $('sse-indicator').innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span> Reconnecting…';
+    };
+    es.onmessage = (msg) => {
+        let ev;
+        try { ev = JSON.parse(msg.data); } catch (e) { return; }
+        if (ev.type === 'snapshot') {
+            queueState.jobs = ev.jobs || [];
+            renderQueue();
+            renderLibrary();
+        } else if (ev.type === 'job_added' || ev.type === 'job_updated') {
+            upsertJob(ev.job);
+            renderQueue();
+            renderLibrary();
+            if (ev.type === 'job_updated' && (ev.job.status === 'done' || ev.job.status === 'failed')) {
+                const meta = ev.job.metadata || {};
+                const title = meta.title ? `${meta.artist || ''} — ${meta.title}` : ev.job.url;
+                if (ev.job.status === 'done') {
+                    notifyBrowser('✅ Download complete', title);
+                    refreshStorage();
+                } else {
+                    notifyBrowser('❌ Download failed', title + ' — ' + (ev.job.error || ''));
+                }
+            }
+        } else if (ev.type === 'job_log') {
+            appendJobLogLines(ev.id, ev.lines || []);
+        } else if (ev.type === 'job_removed') {
+            queueState.jobs = queueState.jobs.filter(j => j.id !== ev.id);
+            renderQueue();
+            renderLibrary();
+        }
+    };
+}
+connectSSE();
+
+// Per-job action handlers (event delegation)
+document.addEventListener('click', (e) => {
+    const cancel = e.target.closest('[data-job-cancel]');
+    const retry = e.target.closest('[data-job-retry]');
+    const remove = e.target.closest('[data-job-remove]');
+    const reprobe = e.target.closest('[data-job-reprobe]');
+    const folder = e.target.closest('[data-job-folder]');
+    if (cancel) {
+        axios.post(`/jobs/${cancel.dataset.jobCancel}/cancel`).catch(() => {});
+    } else if (retry) {
+        axios.post(`/jobs/${retry.dataset.jobRetry}/retry`).catch(() => {});
+    } else if (remove) {
+        axios.post(`/jobs/${remove.dataset.jobRemove}/remove`).catch(() => {});
+    } else if (reprobe) {
+        axios.post(`/jobs/${reprobe.dataset.jobReprobe}/reprobe`)
+            .then(r => { if (r.data.status === 'ok') showToast('Re-probe done', 'ok'); })
+            .catch(() => {});
+    } else if (folder) {
+        axios.post('/open_folder', { path: folder.dataset.jobFolder }, { headers: { 'Content-Type': 'application/json' } })
+            .then(r => { if (r.data.status !== 'ok') showToast(r.data.msg || 'Open failed', 'err'); })
+            .catch(() => {});
+    }
 });
 
-// Cancel 2FA
-document.getElementById('cancel-2fa').addEventListener('click', function() {
+$('clear-completed-btn').addEventListener('click', () => {
+    queueState.jobs.filter(j => ['done', 'failed', 'canceled', 'skipped'].includes(j.status))
+        .forEach(j => axios.post(`/jobs/${j.id}/remove`).catch(() => {}));
+});
+
+// ============================================================================
+// 2FA modal
+// ============================================================================
+function show2FAModal() {
+    const modal = $('twofa-modal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    setTimeout(() => $('twofa-code').focus(), 100);
+}
+function hide2FAModal() {
+    const modal = $('twofa-modal');
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+    $('twofa-code').value = '';
+}
+
+$('submit-2fa').addEventListener('click', () => {
+    const code = $('twofa-code').value.trim();
+    if (!code) {
+        appendLog('wrapper-logs', 'Please enter your 2FA code', 'err');
+        return;
+    }
+    appendLog('wrapper-logs', '🔐 Submitting 2FA code...', 'info');
+    axios.post('/submit_2fa', new URLSearchParams({ twofa_code: code }))
+        .then(res => {
+            appendLog('wrapper-logs', res.data.msg, res.data.status === 'ok' ? 'ok' : 'err');
+            if (res.data.status === 'ok') hide2FAModal();
+        })
+        .catch(() => appendLog('wrapper-logs', 'Failed to submit 2FA code', 'err'));
+});
+
+$('cancel-2fa').addEventListener('click', () => {
     hide2FAModal();
-    const wrapperLogs = document.getElementById('wrapper-logs');
-    wrapperLogs.innerHTML += `<div style="color: #ffc107;">> ⚠️ 2FA cancelled by user</div>`;
-    wrapperLogs.scrollTop = wrapperLogs.scrollHeight;
+    appendLog('wrapper-logs', '⚠ 2FA cancelled by user', 'warn');
 });
 
-// Allow Enter key to submit 2FA and validate input
-document.getElementById('twofa-code').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('submit-2fa').click();
-    }
-    // Only allow numeric input
-    if (!/[0-9]/.test(e.key) && !['Enter', 'Backspace', 'Delete', 'Tab', 'Escape', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault();
-    }
-});
-
-// Format 2FA input as user types
-document.getElementById('twofa-code').addEventListener('input', function(e) {
-    // Remove any non-numeric characters
+$('twofa-code').addEventListener('input', function () {
     this.value = this.value.replace(/[^0-9]/g, '');
 });
-
-// Close modal when clicking outside
-document.getElementById('twofa-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        document.getElementById('cancel-2fa').click();
-    }
+$('twofa-code').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') $('submit-2fa').click();
 });
+
+$('twofa-modal').addEventListener('click', function (e) {
+    if (e.target === this) $('cancel-2fa').click();
+});
+
+// ============================================================================
+// Initial state
+// ============================================================================
+checkSavedCredentials();
 </script>
+
 </body>
 </html>

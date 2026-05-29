@@ -1,0 +1,67 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        Tag suffixes, sort tags, iTunes IDs &mdash; what to enable
+    </summary>
+    <div class="mt-3 space-y-4 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Filename suffixes</h4>
+            <p>
+                Appended to song / album filenames so you can grep your library for content type. Examples: <code class="font-mono">[E]</code> = explicit, <code class="font-mono">[C]</code> = clean (radio edit), <code class="font-mono">[M]</code> = Apple Master / Mastered for iTunes. Leave blank to skip the suffix entirely. Most users keep the defaults; they're cosmetic.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Sort Order Tags</h4>
+            <p>
+                Writes <code class="font-mono">artistsort</code> / <code class="font-mono">albumsort</code> / <code class="font-mono">titlesort</code> tags so libraries sort &quot;The Beatles&quot; under <em>B</em> and not <em>T</em>. Most modern players (Plex, Jellyfin, Roon, Symfonium) honour these. Leave on.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">iTunes ID Tag</h4>
+            <p>
+                Embeds Apple's catalog identifiers (<code class="font-mono">cnID</code>, <code class="font-mono">plID</code>, <code class="font-mono">atID</code>) so your taggers and dedup tools can recognise the file as &quot;the official Apple Music release of X&quot;. Useful when matching against MusicBrainz / Apple Music libraries.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Playlist-specific options</h4>
+            <ul class="ml-5 list-disc space-y-1">
+                <li><strong>Use Song Info for Playlist</strong> &mdash; tags each track with its <em>album</em> metadata (year, original album name, track-of-N) instead of playlist metadata. <strong>Recommended ON</strong>: makes playlist-downloaded tracks behave normally in your library; OFF gives every track <code class="font-mono">album = &quot;My Playlist&quot;</code> which collapses your library view.</li>
+                <li><strong>Download Album Cover for Playlist</strong> &mdash; pulls each track's real album art instead of the playlist's collage. Pairs nicely with the option above.</li>
+            </ul>
+        </div>
+
+        <div class="flex items-start gap-2.5 rounded-lg border border-amber-300/70 bg-amber-50 p-3 text-[12px] leading-relaxed text-amber-900 dark:border-amber-700/40 dark:bg-amber-500/10 dark:text-amber-200">
+            <i data-lucide="alert-triangle" class="mt-0.5 h-4 w-4 shrink-0"></i>
+            <div class="space-y-1.5">
+                <p>
+                    <strong>Heads up &mdash; downloading a playlist saves individual song files, not a single playlist.</strong>
+                </p>
+                <p>
+                    Apple Music playlists come down as one m4a per track in <code class="font-mono">{PlaylistName}/</code>. There is no <code class="font-mono">.m3u8</code> / <code class="font-mono">.xspf</code> sidecar by default. If you import that folder into <strong>MusicBrainz Picard</strong> or <strong>Mp3tag</strong> for full metadata clean-up, those tools will scatter the songs back into <code class="font-mono">Artist/Album/&hellip;</code> folders unless you tell them not to. Check the &quot;move to library&quot; / &quot;rename based on tags&quot; options before clicking apply on a playlist batch.
+                </p>
+                <p class="text-[11.5px] opacity-90">
+                    Workaround: enable <em>Use Song Info for Playlist</em> + <em>Download Album Cover for Playlist</em> above, then in your tagger turn OFF auto-rename and only fill missing tags. The files stay in your <code class="font-mono">{PlaylistName}/</code> folder.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Want richer metadata than what Apple ships?</h4>
+            <p>
+                Two excellent (free) post-processors that pair well with this tool:
+            </p>
+            <ul class="ml-5 mt-1 list-disc space-y-1">
+                <li><a href="https://picard.musicbrainz.org/" target="_blank" rel="noopener" class="text-brand-600 underline hover:no-underline dark:text-brand-400"><strong>MusicBrainz Picard</strong></a> &mdash; cross-platform, AcousticID-based fingerprinting, fills in MusicBrainz IDs, original release dates, label info, work / recording / composer credits. Best for &quot;I want my whole library to look like a discography&quot;.</li>
+                <li><a href="https://www.mp3tag.de/en/" target="_blank" rel="noopener" class="text-brand-600 underline hover:no-underline dark:text-brand-400"><strong>Mp3tag</strong></a> (Windows / macOS) &mdash; faster manual editor, scriptable Actions, online sources include MusicBrainz, Discogs, Beatport, Apple Music itself. Best for tweaking individual albums or applying a custom naming scheme.</li>
+            </ul>
+            <p class="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400">
+                Both will recognise files this tool produces (m4a / flac / mp3) and keep the cover art Apple already embedded.
+            </p>
+        </div>
+
+    </div>
+</details>

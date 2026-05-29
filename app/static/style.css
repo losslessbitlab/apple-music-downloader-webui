@@ -1,93 +1,235 @@
+/*
+ * Custom additions on top of Tailwind Play CDN.
+ * Kept minimal — only things Tailwind doesn't do well out of the box.
+ */
+
+/* ----- Base / fonts ----- */
+:root {
+    color-scheme: light dark;
+}
+
+html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-    font-family: "Segoe UI", sans-serif;
+    font-feature-settings: "cv11", "ss01";
 }
 
+/* ----- Log panes ----- */
 .log-box {
-    background: #111;
-    border: 1px solid #444;
-    padding: 10px;
-    height: 200px;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 0.9rem;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono",
+        Consolas, "Liberation Mono", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.55;
     white-space: pre-wrap;
-    border-radius: 8px;
+    word-break: break-word;
 }
 
-/* 2FA Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    backdrop-filter: blur(3px);
+.log-box > div {
+    padding: 1px 0;
+    transition: background-color 0.12s ease;
 }
 
-.modal-content {
-    background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
-    border: 2px solid #444;
-    border-radius: 15px;
-    padding: 30px;
-    max-width: 450px;
-    width: 90%;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    animation: modalSlideIn 0.3s ease-out;
-    color: white;
+.log-box > div:hover {
+    background: rgba(148, 163, 184, 0.08);
 }
 
-.modal-header {
-    text-align: center;
-    margin-bottom: 20px;
+.log-box::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-.modal-title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: #00d4ff;
-    margin: 0;
+.log-box::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.modal-body {
-    text-align: center;
+.log-box::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 4px;
 }
 
-.modal-body p {
-    font-size: 1.1rem;
-    color: #ccc;
+.log-box::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
 }
 
-.modal-body input {
-    background: #333;
-    border: 2px solid #555;
-    color: white;
-    font-size: 1.2rem;
-    letter-spacing: 2px;
-    transition: all 0.3s ease;
+.log-box:empty::before {
+    content: "Logs will appear here…";
+    color: rgb(100 116 139 / 0.6);
+    font-style: italic;
 }
 
-.modal-body input:focus {
-    border-color: #00d4ff;
-    background: #444;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+/* ----- Status dot pulse ----- */
+.status-dot {
+    position: relative;
+    display: inline-block;
 }
 
-.gap-2 {
-    gap: 0.5rem !important;
+.status-dot.is-active::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.6;
+    animation: status-pulse 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-@keyframes modalSlideIn {
+@keyframes status-pulse {
+    0% {
+        transform: scale(0.7);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(2.4);
+        opacity: 0;
+    }
+}
+
+/* ----- Modal entrance ----- */
+.modal-anim {
+    animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-in {
     from {
         opacity: 0;
-        transform: translateY(-30px) scale(0.95);
+        transform: translateY(8px) scale(0.97);
     }
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+}
+
+/* ----- Toast entrance ----- */
+.toast-anim {
+    animation: toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ----- Segmented control (format radios) ----- */
+.segmented input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segmented label {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.segmented input[type="radio"]:checked + label {
+    background: white;
+    color: rgb(15 23 42);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.08), 0 1px 3px rgb(15 23 42 / 0.06);
+}
+
+html.dark .segmented input[type="radio"]:checked + label {
+    background: rgb(51 65 85);
+    color: rgb(248 250 252);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+.segmented input[type="radio"]:focus-visible + label {
+    outline: 2px solid rgb(250 35 59 / 0.5);
+    outline-offset: 2px;
+}
+
+.segmented input[type="radio"]:disabled + label {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* ----- Subtle gradient background accent ----- */
+.bg-grid {
+    background-image:
+        radial-gradient(circle at 20% 0%, rgb(250 35 59 / 0.07), transparent 35%),
+        radial-gradient(circle at 80% 0%, rgb(99 102 241 / 0.06), transparent 35%);
+}
+
+html.dark .bg-grid {
+    background-image:
+        radial-gradient(circle at 20% 0%, rgb(250 35 59 / 0.12), transparent 40%),
+        radial-gradient(circle at 80% 0%, rgb(99 102 241 / 0.10), transparent 40%);
+}
+
+/* ----- Reduced motion ----- */
+@media (prefers-reduced-motion: reduce) {
+    .modal-anim,
+    .toast-anim {
+        animation: none;
+    }
+    .status-dot.is-active::after {
+        animation: none;
+        opacity: 0;
+    }
+    * {
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ----- Hide scrollbar arrows on number inputs ----- */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* ----- (i) info popovers ------------------------------------------------- */
+/* Used for tiny click-to-explain bubbles next to checkboxes / labels.
+   Implementation is a native <details>/<summary> so it stays keyboard-
+   accessible and works with no JS at all. The body floats above the
+   surrounding content via absolute positioning; click-outside is wired
+   in JS so opening one closes the others. */
+.info-pop { display: inline-block; }
+.info-pop-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.125rem; height: 1.125rem;
+    border-radius: 9999px; cursor: pointer;
+    color: rgb(100 116 139);
+    list-style: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.info-pop-trigger::-webkit-details-marker { display: none; }
+.info-pop-trigger:hover { color: rgb(250 35 59); background: rgb(250 35 59 / 0.08); }
+.info-pop[open] > .info-pop-trigger { color: rgb(250 35 59); background: rgb(250 35 59 / 0.12); }
+html.dark .info-pop-trigger { color: rgb(148 163 184); }
+html.dark .info-pop-trigger:hover,
+html.dark .info-pop[open] > .info-pop-trigger { color: rgb(255 92 117); background: rgb(255 92 117 / 0.12); }
+.info-pop-body {
+    position: absolute; z-index: 30;
+    top: calc(100% + 0.4rem); left: 0;
+    width: min(20rem, calc(100vw - 2rem));
+    border-radius: 0.625rem;
+    border: 1px solid rgb(226 232 240);
+    background: white;
+    box-shadow: 0 8px 24px -8px rgb(15 23 42 / 0.18), 0 2px 4px -2px rgb(15 23 42 / 0.08);
+    padding: 0.75rem 0.875rem;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: rgb(51 65 85);
+}
+html.dark .info-pop-body {
+    background: rgb(15 23 42);
+    border-color: rgb(51 65 85);
+    color: rgb(203 213 225);
+    box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
 }

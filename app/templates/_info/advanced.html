@@ -1,0 +1,39 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        Advanced &mdash; ports, MV options &amp; ALAC Fix
+    </summary>
+    <div class="mt-3 space-y-3 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Wrapper ports</h4>
+            <p>
+                <code class="font-mono">decrypt-m3u8-port</code> and <code class="font-mono">get-m3u8-port</code> are the TCP endpoints the bundled wrapper exposes to AMD. Defaults are <code class="font-mono">127.0.0.1:10020</code> and <code class="font-mono">127.0.0.1:20020</code>; only touch them if another local service collides on those ports.
+            </p>
+        </div>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">M3U8 Mode</h4>
+            <ul class="ml-5 list-disc space-y-1">
+                <li><strong>Hi-Res Only</strong> &mdash; hits the on-device m3u8 endpoint only for tracks tagged Hi-Res. Faster scans, identical results for non-Hi-Res content.</li>
+                <li><strong>All</strong> &mdash; queries the device endpoint for every track. Required if you want the absolute best variant Apple ever exposed, even for non-Hi-Res tracks. Slightly slower.</li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">MV Audio Type / Max</h4>
+            <p>
+                Applies only when you download a music video directly. <strong>MV Audio Type</strong> picks the audio track inside the MV container: Atmos (best for Atmos gear), AC3 (Dolby Digital 5.1, broad compatibility), or AAC (stereo, smallest). <strong>MV Max</strong> is the maximum video height; <code class="font-mono">2160</code> caps at 4K, <code class="font-mono">1080</code> at FHD. Most catalogue MVs cap out at 1080p anyway.
+            </p>
+        </div>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">ALAC Fix</h4>
+            <p>
+                Some early-2020s ALAC streams from Apple's CDN had malformed packet headers that confuse strict decoders (ffmpeg with <code class="font-mono">-err_detect explode</code>, foobar2000 1.x). Enable this to patch the packets post-download. Free to leave on; only matters when you hit one of those streams.
+            </p>
+        </div>
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Get M3U8 from Device</h4>
+            <p>
+                Routes m3u8 manifest fetches through the bundled wrapper instead of the public web API. Slightly more reliable for Hi-Res tier discovery; required for some 192 kHz albums where the web API doesn't advertise the top tier.
+            </p>
+        </div>
+    </div>
+</details>

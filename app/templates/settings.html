@@ -1,429 +1,771 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Apple Music Downloader - Settings</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings · Apple Music Downloader</title>
+
+    {# Theme bootstrap (must run before paint) #}
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var dark = t ? t === 'dark' : prefersDark;
+                document.documentElement.classList.toggle('dark', dark);
+            } catch (e) {}
+        })();
+    </script>
+
+    {# Tailwind Play CDN (v3) #}
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff1f3', 100: '#ffdfe4', 200: '#ffc4cd', 300: '#ff97a7',
+                            400: '#ff5c75', 500: '#fa233b', 600: '#e1102f', 700: '#bd0a26',
+                            800: '#9c0c24', 900: '#811023'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 1px 2px rgb(15 23 42 / 0.06), 0 4px 16px -4px rgb(15 23 42 / 0.08)',
+                        'soft-dark': '0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -8px rgb(0 0 0 / 0.5)'
+                    }
+                }
+            }
+        };
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        .settings-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .settings-section {
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .settings-section h4 {
-            color: #fff;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .form-label {
-            color: #ccc;
-            font-weight: 500;
-        }
-        .form-control, .form-select {
-            background: #333;
-            border: 1px solid #555;
-            color: #fff;
-        }
-        .form-control:focus, .form-select:focus {
-            background: #333;
-            border-color: #007bff;
-            color: #fff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-        .form-check-input:checked {
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-        .text-muted {
-            color: #aaa !important;
-        }
-        small.text-muted {
-            color: #bbb !important;
-        }
-        .btn-save {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-        .alert {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1001;
-            min-width: 300px;
-        }
-    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.16.0/dist/axios.min.js"
+            integrity="sha384-a/VMdjcWT+6Ii+fn19leSlff1l2FT/RcMXcjP4JS2xjI+DHL54a79OAPk4+O2jmU"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"
+            integrity="sha384-ieG+IKD0d/ZPXyCBTMVAbqsQdns8QGJR/e26WMw7M4fkaI/rHcS/YIoi+ah9WGge"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
 </head>
-<body class="bg-dark text-light">
+<body class="bg-grid bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen">
 
-<div class="settings-container">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>⚙️ Settings</h2>
-        <button class="btn btn-outline-light" onclick="window.location.href='/'">← Back to Main</button>
+{# ============== HEADER ============== #}
+<header class="sticky top-0 z-40 border-b border-slate-200/60 bg-white/70 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-950/70">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <a href="/" class="flex items-center gap-2.5 group">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-soft transition-transform group-hover:scale-105">
+                <i data-lucide="music" class="h-5 w-5"></i>
+            </span>
+            <span class="hidden sm:flex flex-col leading-tight">
+                <span class="text-sm font-semibold tracking-tight">Apple Music Downloader</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">Settings</span>
+            </span>
+        </a>
+
+        <div class="flex items-center gap-2">
+            <button type="button" id="theme-toggle"
+                    aria-label="Toggle theme"
+                    class="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
+                <i data-lucide="sun" class="block h-4 w-4 dark:hidden"></i>
+                <i data-lucide="moon" class="hidden h-4 w-4 dark:block"></i>
+            </button>
+            <a href="/"
+               class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white">
+                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                <span class="hidden sm:inline">Back</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+{# ============== MAIN ============== #}
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8 pb-32">
+
+    {# --- Page header --- #}
+    <section class="mb-8">
+        <h1 class="text-3xl font-extrabold tracking-tight">Settings</h1>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Configure how the Apple Music downloader behaves. Changes are saved to <code class="font-mono text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">apple-music-downloader/config.yaml</code>.</p>
+    </section>
+
+    {# --- Loading state --- #}
+    <div id="loading" class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-500 dark:border-slate-700 dark:border-t-brand-500"></div>
+        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Loading configuration…</p>
     </div>
 
-    <!-- Loading indicator -->
-    <div id="loading" class="text-center">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-2">Loading configuration...</p>
-    </div>
+    {# --- Settings form --- #}
+    <form id="settings-form" class="hidden space-y-6">
 
-    <!-- Settings Form -->
-    <form id="settings-form" style="display: none;">
-        
-        <!-- Authentication Settings -->
-        <div class="settings-section">
-            <h4>🔐 Authentication</h4>
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="media-user-token" class="form-label">Media User Token</label>
-                    <input type="text" class="form-control" id="media-user-token" placeholder="your-media-user-token">
-                    <small class="text-muted">Required for lyrics and AAC-LC downloads</small>
+        {# === Authentication === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                    <i data-lucide="shield-check" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Authentication</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Tokens used to access Apple Music's API.</p>
                 </div>
-                <div class="col-md-6">
-                    <label for="authorization-token" class="form-label">Authorization Token</label>
-                    <input type="text" class="form-control" id="authorization-token" placeholder="your-authorization-token">
-                    <small class="text-muted">Auto-obtained, usually no need to change</small>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2">
+                <div>
+                    <label for="media-user-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Media User Token</label>
+                    <input type="text" id="media-user-token" placeholder="your-media-user-token" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Required for lyrics and AAC-LC downloads. Leave blank when re-saving to keep the existing value.</p>
+                </div>
+                <div>
+                    <label for="authorization-token" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Authorization Token</label>
+                    <input type="text" id="authorization-token" placeholder="your-authorization-token" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Auto-obtained, usually no need to change.</p>
                 </div>
             </div>
-        </div>
 
-        <!-- Regional Settings -->
-        <div class="settings-section">
-            <h4>🌍 Regional Settings</h4>
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="language" class="form-label">Language</label>
-                    <input type="text" class="form-control" id="language" placeholder="e.g., en-US">
+            {# === Media User Token guide — collapsible === #}
+            <details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+                <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+                    <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+                    How do I get a Media User Token?
+                </summary>
+                <div class="mt-3 space-y-3 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+                    <p>
+                        The Media User Token is a 200+ character string tied to a logged-in Apple Music subscription. You only ever need to grab it once. <strong>It expires after a few months</strong> or whenever Apple invalidates your session — at which point lyrics, AAC-LC and music-video downloads start returning <code class="font-mono text-[11px] px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Unavailable</code> and you fetch a fresh one.
+                    </p>
+                    <ol class="ml-5 list-decimal space-y-1.5">
+                        <li>In a desktop browser (Chrome / Edge / Firefox), open <a href="https://music.apple.com" target="_blank" rel="noopener" class="text-brand-600 underline hover:no-underline dark:text-brand-400">music.apple.com</a> and sign in with an account that has an <strong>active Apple Music subscription</strong>.</li>
+                        <li>Play any track or playlist for a few seconds so Apple actually issues the cookie.</li>
+                        <li>Open DevTools — <kbd class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">F12</kbd> or <kbd class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Ctrl+Shift+I</kbd> (<kbd class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">⌘⌥I</kbd> on macOS) — and switch to the <strong>Console</strong> tab.</li>
+                        <li>Paste the one-liner below and press <kbd class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">Enter</kbd>. Your token is now on the clipboard.</li>
+                        <li>Paste it into the <strong>Media User Token</strong> field above and click <strong>Save</strong>.</li>
+                    </ol>
+
+                    {# Yellow info callout — &quot;What is this script doing?&quot; #}
+                    <div class="flex items-start gap-2.5 rounded-lg border border-amber-300/70 bg-amber-50 p-3 text-[12px] leading-relaxed text-amber-900 dark:border-amber-700/40 dark:bg-amber-500/10 dark:text-amber-200">
+                        <i data-lucide="help-circle" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                        <div class="space-y-1.5">
+                            <p>
+                                <strong>What does this script actually do?</strong>
+                            </p>
+                            <p>
+                                It just reads the <code class="font-mono">media-user-token</code> cookie that Apple Music's web player drops on you after sign-in, and copies it to your clipboard via <code class="font-mono">copy()</code> — a built-in DevTools console helper. Nothing leaves your browser, nothing is sent over the network, nothing is stored. The whole thing is one expression and you can paste it as-is into any modern browser console.
+                            </p>
+                            <p class="text-[11.5px] opacity-90">
+                                If you'd rather grab the value by hand: open DevTools &rarr; <em>Application</em> tab &rarr; <em>Cookies</em> &rarr; <code class="font-mono">https://music.apple.com</code> &rarr; copy the value of <code class="font-mono">media-user-token</code>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <pre id="mut-snippet" class="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 pr-20 text-[11.5px] font-mono text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">copy(document.cookie.split('; ').find(c =&gt; c.startsWith('media-user-token=')).split('=')[1])</pre>
+                        <button id="mut-copy" type="button"
+                                class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-medium text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                            <i data-lucide="copy" class="h-3 w-3"></i> Copy
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-500">
+                        If the console errors with <code class="font-mono">Cannot read properties of undefined</code>, you aren't signed in yet or the cookie hasn't issued — play any track for a few seconds and re-run. Treat the token like a password; never share it.
+                    </p>
                 </div>
-                <div class="col-md-6">
-                    <label for="storefront" class="form-label">Storefront</label>
-                    <input type="text" class="form-control" id="storefront" placeholder="e.g., us, jp, ca">
-                    <small class="text-muted">2-letter country code for your account region</small>
+            </details>
+        </section>
+
+        {# === Regional === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                    <i data-lucide="globe" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Regional</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Language and storefront for metadata.</p>
+                </div>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2">
+                <div>
+                    <label for="language" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Language</label>
+                    <input type="text" id="language" placeholder="e.g. en-US" class="cfg-input">
+                </div>
+                <div>
+                    <label for="storefront" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Storefront</label>
+                    <input type="text" id="storefront" placeholder="e.g. us, jp, ca" class="cfg-input">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">2-letter country code for your account region.</p>
                 </div>
             </div>
-        </div>
+            {% include "_info/regional.html" ignore missing %}
+        </section>
 
-        <!-- Download Folders -->
-        <div class="settings-section">
-            <h4>📁 Download Folders</h4>
-            <div class="row">
-                <div class="col-md-4">
-                    <label for="alac-save-folder" class="form-label">ALAC Folder</label>
-                    <input type="text" class="form-control" id="alac-save-folder" placeholder="AM-DL downloads">
+        {# === Download folders === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <i data-lucide="folder-open" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Download Folders</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Where each format is saved on disk.</p>
                 </div>
-                <div class="col-md-4">
-                    <label for="atmos-save-folder" class="form-label">Atmos Folder</label>
-                    <input type="text" class="form-control" id="atmos-save-folder" placeholder="AM-DL-Atmos downloads">
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label for="alac-save-folder" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ALAC</label>
+                    <input type="text" id="alac-save-folder" placeholder="AM-DL downloads" class="cfg-input font-mono">
                 </div>
-                <div class="col-md-4">
-                    <label for="aac-save-folder" class="form-label">AAC Folder</label>
-                    <input type="text" class="form-control" id="aac-save-folder" placeholder="AM-DL-AAC downloads">
+                <div>
+                    <label for="atmos-save-folder" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Atmos</label>
+                    <input type="text" id="atmos-save-folder" placeholder="AM-DL-Atmos downloads" class="cfg-input font-mono">
+                </div>
+                <div>
+                    <label for="aac-save-folder" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">AAC</label>
+                    <input type="text" id="aac-save-folder" placeholder="AM-DL-AAC downloads" class="cfg-input font-mono">
+                </div>
+                <div>
+                    <label for="mv-save-folder" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Music Videos</label>
+                    <input type="text" id="mv-save-folder" placeholder="AM-DL-MV downloads" class="cfg-input font-mono">
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Quality Settings -->
-        <div class="settings-section">
-            <h4>🎵 Quality Settings</h4>
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="aac-type" class="form-label">AAC Type</label>
-                    <select class="form-select" id="aac-type">
+        {# === Quality preference chain (alac-rip web UI extension) === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <i data-lucide="list-ordered" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Quality Preference Chain <span class="ml-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">active</span></h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        First entry the asset supports wins. Drives <strong>--alac-max</strong> for every queued job and seeds the in-modal chain editor.
+                        Per-item Cap dropdowns &gt; in-modal chain &gt; this saved chain.
+                    </p>
+                </div>
+            </header>
+            <div class="space-y-5 p-5">
+                <div>
+                    <label for="quality-preference-chain" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Sample rates in priority order (Hz)</label>
+                    <input type="text" id="quality-preference-chain"
+                           placeholder="48000, 44100, 96000, 192000"
+                           class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">
+                        Comma- or space-separated. The first one the album/track actually has wins. Default: <code>48000, 44100, 96000, 192000</code>.
+                        <br>Recommended for most consumer hardware: keep <code>48000</code> first (24-bit/48 kHz; full audible spectrum, modest size).
+                    </p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="cfg-toggle"><input type="checkbox" id="quality-strict-mode" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Strict Mode <span class="cfg-toggle-hint">Require confirm if first preference unavailable</span></span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="skip-if-exists" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Skip If Exists <span class="cfg-toggle-hint">Skip URL when save folder already has audio</span></span></label>
+                </div>
+            </div>
+            {% include "_info/chain.html" ignore missing %}
+        </section>
+
+        {# === Library / Webhooks === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400">
+                    <i data-lucide="webhook" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Library &amp; Webhooks</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Trigger external systems after each successful download.</p>
+                </div>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2">
+                <div>
+                    <label for="library-scan-webhook" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Library Scan URL</label>
+                    <input type="text" id="library-scan-webhook"
+                           placeholder="http://plex:32400/library/sections/1/refresh?X-Plex-Token=..."
+                           class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Hit on every success (GET). Plex / Jellyfin / Emby scan endpoints all work.</p>
+                </div>
+                <div>
+                    <label for="completion-webhook" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Completion Webhook (JSON POST)</label>
+                    <input type="text" id="completion-webhook"
+                           placeholder="https://discord.com/api/webhooks/... or ntfy.sh/..."
+                           class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Receives a JSON body with URL, format, quality summary, save folder, and duration.</p>
+                </div>
+            </div>
+            {% include "_info/webhooks.html" ignore missing %}
+        </section>
+
+        {# === Quality === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                    <i data-lucide="audio-waveform" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Quality (downloader caps) <span class="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">legacy</span></h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Hard ceiling that maps onto upstream <code>config.yaml</code>. Each queue job now passes <code>--alac-max</code> on the CLI per
+                        the <strong>Quality Preference Chain</strong> above, so <strong>that</strong> is the active driver. Leave ALAC Max at <code>192 kHz</code>
+                        (the catalog ceiling) unless you want a hard upper bound the chain cannot exceed.
+                    </p>
+                </div>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-4">
+                <div>
+                    <label for="aac-type" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">AAC Type</label>
+                    <select id="aac-type" class="cfg-input">
                         <option value="aac-lc">AAC-LC</option>
                         <option value="aac">AAC</option>
                         <option value="aac-binaural">AAC Binaural</option>
                         <option value="aac-downmix">AAC Downmix</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label for="alac-max" class="form-label">ALAC Max Quality</label>
-                    <select class="form-select" id="alac-max">
+                <div>
+                    <label for="alac-max" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">ALAC Max</label>
+                    <select id="alac-max" class="cfg-input">
                         <option value="192000">192 kHz</option>
                         <option value="96000">96 kHz</option>
                         <option value="48000">48 kHz</option>
                         <option value="44100">44.1 kHz</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label for="atmos-max" class="form-label">Atmos Max Quality</label>
-                    <select class="form-select" id="atmos-max">
+                <div>
+                    <label for="atmos-max" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Atmos Max</label>
+                    <select id="atmos-max" class="cfg-input">
                         <option value="2768">2768 kbps</option>
                         <option value="2448">2448 kbps</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label for="limit-max" class="form-label">Download Limit</label>
-                    <input type="number" class="form-control" id="limit-max" min="1" max="1000" placeholder="200">
+                <div>
+                    <label for="limit-max" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Download Limit</label>
+                    <input type="number" id="limit-max" min="1" max="1000" placeholder="200" class="cfg-input">
                 </div>
             </div>
-        </div>
+            {% include "_info/quality.html" ignore missing %}
+        </section>
 
-        <!-- Cover Art Settings -->
-        <div class="settings-section">
-            <h4>🖼️ Cover Art Settings</h4>
-            <div class="row">
-                <div class="col-md-4">
-                    <label for="cover-size" class="form-label">Cover Size</label>
-                    <input type="text" class="form-control" id="cover-size" placeholder="5000x5000">
+        {# === Cover art === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
+                    <i data-lucide="image" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Cover Art</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Artwork resolution, format, and embedding.</p>
                 </div>
-                <div class="col-md-4">
-                    <label for="cover-format" class="form-label">Cover Format</label>
-                    <select class="form-select" id="cover-format">
-                        <option value="jpg">JPG</option>
-                        <option value="png">PNG</option>
-                        <option value="original">Original</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <div class="mt-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="embed-cover">
-                            <label class="form-check-label" for="embed-cover">Embed Cover Art</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="save-artist-cover">
-                            <label class="form-check-label" for="save-artist-cover">Save Artist Cover</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="save-animated-artwork">
-                            <label class="form-check-label" for="save-animated-artwork">Save Animated Artwork</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="emby-animated-artwork">
-                            <label class="form-check-label" for="emby-animated-artwork">Emby Animated Artwork</label>
-                        </div>
+            </header>
+            <div class="space-y-5 p-5">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="cover-size" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Cover Size</label>
+                        <input type="text" id="cover-size" placeholder="5000x5000" class="cfg-input font-mono">
+                    </div>
+                    <div>
+                        <label for="cover-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Cover Format</label>
+                        <select id="cover-format" class="cfg-input">
+                            <option value="jpg">JPG</option>
+                            <option value="png">PNG</option>
+                            <option value="original">Original</option>
+                        </select>
                     </div>
                 </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="cfg-toggle"><input type="checkbox" id="embed-cover" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Embed Cover Art</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="save-artist-cover" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Save Artist Cover</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="save-animated-artwork" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Save Animated Artwork</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="emby-animated-artwork" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Emby Animated Artwork</span></label>
+                </div>
             </div>
-        </div>
+            {% include "_info/cover.html" ignore missing %}
+        </section>
 
-        <!-- Lyrics Settings -->
-        <div class="settings-section">
-            <h4>📝 Lyrics Settings</h4>
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="lrc-type" class="form-label">Lyrics Type</label>
-                    <select class="form-select" id="lrc-type">
-                        <option value="lyrics">Lyrics</option>
-                        <option value="syllable-lyrics">Syllable Lyrics</option>
-                    </select>
+        {# === Lyrics === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                    <i data-lucide="captions" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Lyrics</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Source format and embedding options.</p>
                 </div>
-                <div class="col-md-3">
-                    <label for="lrc-format" class="form-label">Lyrics Format</label>
-                    <select class="form-select" id="lrc-format">
-                        <option value="lrc">LRC</option>
-                        <option value="ttml">TTML</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="mt-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="embed-lrc">
-                            <label class="form-check-label" for="embed-lrc">Embed Lyrics</label>
-                        </div>
+            </header>
+            <div class="space-y-5 p-5">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="lrc-type" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Lyrics Type</label>
+                        <select id="lrc-type" class="cfg-input">
+                            <option value="lyrics">Lyrics</option>
+                            <option value="syllable-lyrics">Syllable Lyrics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="lrc-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Lyrics Format</label>
+                        <select id="lrc-format" class="cfg-input">
+                            <option value="lrc">LRC</option>
+                            <option value="ttml">TTML</option>
+                        </select>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="mt-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="save-lrc-file">
-                            <label class="form-check-label" for="save-lrc-file">Save Lyrics File</label>
-                        </div>
-                    </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="cfg-toggle"><input type="checkbox" id="embed-lrc" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Embed Lyrics</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="save-lrc-file" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Save Lyrics File</span></label>
                 </div>
             </div>
-        </div>
+            {% include "_info/lyrics.html" ignore missing %}
+        </section>
 
-        <!-- File Naming -->
-        <div class="settings-section">
-            <h4>📂 File Naming Formats</h4>
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="album-folder-format" class="form-label">Album Folder Format</label>
-                    <input type="text" class="form-control" id="album-folder-format" placeholder="{AlbumName}">
-                    <small class="text-muted">Variables: {AlbumId}, {AlbumName}, {ArtistName}, {ReleaseDate}, {ReleaseYear}, {UPC}, {Copyright}, {Quality}, {Codec}, {Tag}, {RecordLabel}</small>
+        {# === File naming === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                    <i data-lucide="folder-tree" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">File &amp; Folder Naming</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Templates with placeholder variables.</p>
                 </div>
-                <div class="col-md-6">
-                    <label for="playlist-folder-format" class="form-label">Playlist Folder Format</label>
-                    <input type="text" class="form-control" id="playlist-folder-format" placeholder="{PlaylistName}">
-                    <small class="text-muted">Variables: {PlaylistId}, {PlaylistName}, {ArtistName}, {Quality}, {Codec}, {Tag}</small>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2">
+                <div>
+                    <label for="album-folder-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Album Folder Format</label>
+                    <input type="text" id="album-folder-format" placeholder="{AlbumName}" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">{AlbumId}, {AlbumName}, {ArtistName}, {ReleaseDate}, {ReleaseYear}, {UPC}, {Copyright}, {Quality}, {Codec}, {Tag}, {RecordLabel}</p>
+                </div>
+                <div>
+                    <label for="playlist-folder-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Playlist Folder Format</label>
+                    <input type="text" id="playlist-folder-format" placeholder="{PlaylistName}" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">{PlaylistId}, {PlaylistName}, {ArtistName}, {Quality}, {Codec}, {Tag}</p>
+                </div>
+                <div>
+                    <label for="song-file-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Song File Format</label>
+                    <input type="text" id="song-file-format" placeholder="{SongNumer}. {SongName}" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">{SongId}, {SongNumer}, {SongName}, {DiscNumber}, {TrackNumber}, {Quality}, {Codec}, {Tag}</p>
+                </div>
+                <div>
+                    <label for="artist-folder-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Artist Folder Format</label>
+                    <input type="text" id="artist-folder-format" placeholder="{UrlArtistName}" class="cfg-input font-mono">
+                    <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">{ArtistId}, {ArtistName}, {UrlArtistName}. Leave empty to disable artist folders.</p>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <label for="song-file-format" class="form-label">Song File Format</label>
-                    <input type="text" class="form-control" id="song-file-format" placeholder="{SongNumer}. {SongName}">
-                    <small class="text-muted">Variables: {SongId}, {SongNumer}, {SongName}, {DiscNumber}, {TrackNumber}, {Quality}, {Codec}, {Tag}</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="artist-folder-format" class="form-label">Artist Folder Format</label>
-                    <input type="text" class="form-control" id="artist-folder-format" placeholder="{UrlArtistName}">
-                    <small class="text-muted">Variables: {ArtistId}, {ArtistName}, {UrlArtistName}. Leave empty to disable artist folders</small>
-                </div>
-            </div>
-        </div>
+        </section>
 
-        <!-- Tag Settings -->
-        <div class="settings-section">
-            <h4>🏷️ Tag Settings</h4>
-            <div class="row">
-                <div class="col-md-4">
-                    <label for="explicit-choice" class="form-label">Explicit Tag</label>
-                    <input type="text" class="form-control" id="explicit-choice" placeholder="[E]">
+        {# === Tags === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    <i data-lucide="tag" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Tags</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Suffixes appended to filenames.</p>
                 </div>
-                <div class="col-md-4">
-                    <label for="clean-choice" class="form-label">Clean Tag</label>
-                    <input type="text" class="form-control" id="clean-choice" placeholder="[C]">
-                </div>
-                <div class="col-md-4">
-                    <label for="apple-master-choice" class="form-label">Apple Master Tag</label>
-                    <input type="text" class="form-control" id="apple-master-choice" placeholder="[M]">
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="use-songinfo-for-playlist">
-                        <label class="form-check-label" for="use-songinfo-for-playlist">Use Song Info for Playlist</label>
-                        <small class="text-muted d-block">Use album metadata for playlist tracks</small>
+            </header>
+            <div class="space-y-5 p-5">
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label for="explicit-choice" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Explicit Tag</label>
+                        <input type="text" id="explicit-choice" placeholder="[E]" class="cfg-input">
+                    </div>
+                    <div>
+                        <label for="clean-choice" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Clean Tag</label>
+                        <input type="text" id="clean-choice" placeholder="[C]" class="cfg-input">
+                    </div>
+                    <div>
+                        <label for="apple-master-choice" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Apple Master Tag</label>
+                        <input type="text" id="apple-master-choice" placeholder="[M]" class="cfg-input">
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="dl-albumcover-for-playlist">
-                        <label class="form-check-label" for="dl-albumcover-for-playlist">Download Album Cover for Playlist</label>
-                    </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="cfg-toggle"><input type="checkbox" id="use-songinfo-for-playlist" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Use Song Info for Playlist <span class="cfg-toggle-hint">Use album metadata for playlist tracks</span></span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="dl-albumcover-for-playlist" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Download Album Cover for Playlist</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="tag-sort-order" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Sort Order Tags <span class="cfg-toggle-hint">Write artist/album sort tags</span></span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="tag-itunes-id" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">iTunes ID Tag <span class="cfg-toggle-hint">Embed Apple catalog IDs</span></span></label>
                 </div>
             </div>
-        </div>
+            {% include "_info/tags.html" ignore missing %}
+        </section>
 
-        <!-- Conversion Settings -->
-        <div class="settings-section">
-            <h4>🔄 Conversion Settings</h4>
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="convert-after-download">
-                        <label class="form-check-label" for="convert-after-download">Convert After Download</label>
-                        <small class="text-muted d-block">Requires ffmpeg</small>
+        {# === Conversion === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                    <i data-lucide="repeat" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Conversion</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Optional re-encoding via ffmpeg.</p>
+                </div>
+            </header>
+            <div class="space-y-5 p-5">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-after-download" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Convert After Download <span class="cfg-toggle-hint">Requires ffmpeg</span></span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-keep-original" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Keep Original</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-skip-if-source-matches" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Skip if Source Matches</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-with-metadata" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Carry Metadata</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-warn-lossy-to-lossless" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Warn Lossy→Lossless</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-skip-lossy-to-lossless" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Skip Lossy→Lossless</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-check-bad-alac" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Check Bad ALAC</span></label>
+                    <label class="cfg-toggle"><input type="checkbox" id="convert-delete-bad-alac" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Delete Bad ALAC</span></label>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div>
+                        <label for="convert-format" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Convert Format</label>
+                        <select id="convert-format" class="cfg-input">
+                            <option value="flac">FLAC</option>
+                            <option value="mp3">MP3</option>
+                            <option value="opus">Opus</option>
+                            <option value="wav">WAV</option>
+                            <option value="copy">Copy (no re-encode)</option>
+                        </select>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <label for="convert-format" class="form-label">Convert Format</label>
-                    <select class="form-select" id="convert-format">
-                        <option value="flac">FLAC</option>
-                        <option value="mp3">MP3</option>
-                        <option value="opus">Opus</option>
-                        <option value="wav">WAV</option>
-                        <option value="copy">Copy (no re-encode)</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input" type="checkbox" id="convert-keep-original">
-                        <label class="form-check-label" for="convert-keep-original">Keep Original</label>
+                    <div>
+                        <label for="ffmpeg-path" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">FFmpeg Path</label>
+                        <input type="text" id="ffmpeg-path" placeholder="ffmpeg" class="cfg-input font-mono">
+                        <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Override if ffmpeg is not on PATH.</p>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input" type="checkbox" id="convert-skip-if-source-matches">
-                        <label class="form-check-label" for="convert-skip-if-source-matches">Skip if Source Matches</label>
+                    <div>
+                        <label for="convert-extra-args" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Extra Arguments</label>
+                        <input type="text" id="convert-extra-args" placeholder="extra ffmpeg args" class="cfg-input font-mono">
+                        <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-500">Advanced: appended to the ffmpeg command.</p>
                     </div>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <label for="ffmpeg-path" class="form-label">FFmpeg Path</label>
-                    <input type="text" class="form-control" id="ffmpeg-path" placeholder="ffmpeg">
-                    <small class="text-muted">Override if ffmpeg is not in PATH</small>
-                </div>
-                <div class="col-md-6">
-                    <label for="convert-extra-args" class="form-label">Extra Arguments</label>
-                    <input type="text" class="form-control" id="convert-extra-args" placeholder="Additional ffmpeg arguments">
-                    <small class="text-muted">Advanced: additional raw args appended</small>
-                </div>
-            </div>
-        </div>
+            {% include "_info/conversion.html" ignore missing %}
+        </section>
 
-        <!-- Advanced Settings -->
-        <div class="settings-section">
-            <h4>⚙️ Advanced Settings</h4>
-            <div class="row">
-                <div class="col-md-3">
-                    <label for="max-memory-limit" class="form-label">Max Memory Limit (MB)</label>
-                    <input type="number" class="form-control" id="max-memory-limit" min="64" max="2048" placeholder="256">
+        {# === Advanced === #}
+        <section class="rounded-2xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900 dark:shadow-soft-dark">
+            <header class="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-slate-500/10 text-slate-700 dark:text-slate-300">
+                    <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold tracking-tight">Advanced</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Memory, ports, and music-video options.</p>
                 </div>
-                <div class="col-md-3">
-                    <label for="decrypt-m3u8-port" class="form-label">Decrypt M3U8 Port</label>
-                    <input type="text" class="form-control" id="decrypt-m3u8-port" placeholder="127.0.0.1:10020">
+            </header>
+            <div class="space-y-5 p-5">
+                <div class="grid gap-4 sm:grid-cols-4">
+                    <div>
+                        <label for="max-memory-limit" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Max Memory (MB)</label>
+                        <input type="number" id="max-memory-limit" min="64" max="2048" placeholder="256" class="cfg-input">
+                    </div>
+                    <div>
+                        <label for="decrypt-m3u8-port" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Decrypt M3U8 Port</label>
+                        <input type="text" id="decrypt-m3u8-port" placeholder="127.0.0.1:10020" class="cfg-input font-mono">
+                    </div>
+                    <div>
+                        <label for="get-m3u8-port" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Get M3U8 Port</label>
+                        <input type="text" id="get-m3u8-port" placeholder="127.0.0.1:20020" class="cfg-input font-mono">
+                    </div>
+                    <div>
+                        <label for="get-m3u8-mode" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">M3U8 Mode</label>
+                        <select id="get-m3u8-mode" class="cfg-input">
+                            <option value="hires">Hi-Res Only</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="get-m3u8-port" class="form-label">Get M3U8 Port</label>
-                    <input type="text" class="form-control" id="get-m3u8-port" placeholder="127.0.0.1:20020">
-                </div>
-                <div class="col-md-3">
-                    <label for="get-m3u8-mode" class="form-label">M3U8 Mode</label>
-                    <select class="form-select" id="get-m3u8-mode">
-                        <option value="hires">Hi-Res Only</option>
-                        <option value="all">All</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-md-3">
-                    <label for="mv-audio-type" class="form-label">MV Audio Type</label>
-                    <select class="form-select" id="mv-audio-type">
-                        <option value="atmos">Atmos</option>
-                        <option value="ac3">AC3</option>
-                        <option value="aac">AAC</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="mv-max" class="form-label">MV Max Quality</label>
-                    <input type="number" class="form-control" id="mv-max" placeholder="2160">
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input" type="checkbox" id="get-m3u8-from-device">
-                        <label class="form-check-label" for="get-m3u8-from-device">Get M3U8 from Device</label>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div>
+                        <label for="mv-audio-type" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">MV Audio Type</label>
+                        <select id="mv-audio-type" class="cfg-input">
+                            <option value="atmos">Atmos</option>
+                            <option value="ac3">AC3</option>
+                            <option value="aac">AAC</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="mv-max" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">MV Max Quality</label>
+                        <input type="number" id="mv-max" placeholder="2160" class="cfg-input">
+                    </div>
+                    <div class="flex items-end">
+                        <label class="cfg-toggle w-full"><input type="checkbox" id="get-m3u8-from-device" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">Get M3U8 from Device</span></label>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="cfg-toggle w-full"><input type="checkbox" id="alac-fix" class="peer sr-only"><span class="cfg-toggle-track"></span><span class="cfg-toggle-thumb"></span><span class="cfg-toggle-label">ALAC Fix <span class="cfg-toggle-hint">Patch malformed packets</span></span></label>
                     </div>
                 </div>
             </div>
-        </div>
+            {% include "_info/advanced.html" ignore missing %}
+        </section>
 
     </form>
 
-    <!-- Save Button -->
-    <button type="button" class="btn btn-primary btn-lg btn-save" id="save-btn" style="display: none;">
-        💾 Save Settings
-    </button>
+</main>
+
+{# ============== STICKY SAVE BAR ============== #}
+<div id="save-bar" class="hidden fixed bottom-0 inset-x-0 z-30 border-t border-slate-200 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/85">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 py-3">
+        <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+            Changes are written to <code class="font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">config.yaml</code>.
+        </p>
+        <button type="button" id="save-btn"
+                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition-all hover:shadow-xl hover:shadow-brand-500/40 hover:-translate-y-px focus:outline-none focus:ring-2 focus:ring-brand-500/50 active:scale-[0.98]">
+            <i data-lucide="save" class="h-4 w-4"></i>
+            Save Settings
+        </button>
+    </div>
 </div>
 
-<!-- Alert for notifications -->
-<div id="alert-container"></div>
+{# ============== TOAST CONTAINER ============== #}
+<div id="alert-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 w-80 max-w-[calc(100%-2rem)]"></div>
+
+{# ============== Reusable input/toggle styles applied globally ============== #}
+<style>
+    .cfg-input {
+        width: 100%;
+        border-radius: 0.5rem;
+        border: 1px solid rgb(226 232 240);
+        background: white;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        color: rgb(15 23 42);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+    .cfg-input::placeholder { color: rgb(148 163 184); }
+    .cfg-input:focus {
+        outline: none;
+        border-color: rgb(250 35 59);
+        box-shadow: 0 0 0 3px rgb(250 35 59 / 0.15);
+    }
+    html.dark .cfg-input {
+        background: rgb(30 41 59);
+        border-color: rgb(51 65 85);
+        color: rgb(241 245 249);
+    }
+    html.dark .cfg-input::placeholder { color: rgb(100 116 139); }
+    select.cfg-input {
+        appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%2364748b'><path stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 0.6rem center;
+        background-size: 1rem;
+        padding-right: 2.25rem;
+    }
+
+    /* Toggle switches */
+    .cfg-toggle {
+        display: inline-flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+        padding: 0.5rem 0;
+    }
+    .cfg-toggle-track {
+        position: relative;
+        flex-shrink: 0;
+        width: 2.25rem;
+        height: 1.25rem;
+        border-radius: 9999px;
+        background: rgb(203 213 225);
+        transition: background-color 0.18s ease;
+        /* Sit on the same baseline as the first line of the label
+           (which is ~1.25rem tall); flex-start aligns the top of this
+           track with the top of the label text. */
+        margin-top: 0.125rem;
+    }
+    html.dark .cfg-toggle-track { background: rgb(51 65 85); }
+    .cfg-toggle .peer:checked ~ .cfg-toggle-track { background: rgb(250 35 59); }
+    .cfg-toggle .peer:focus-visible ~ .cfg-toggle-track {
+        box-shadow: 0 0 0 3px rgb(250 35 59 / 0.25);
+    }
+    .cfg-toggle-thumb {
+        position: absolute;
+        /* Centred vertically inside the track. The track sits at:
+             padding-top (0.5rem) + margin-top (0.125rem) = 0.625rem
+           …from the cfg-toggle's outer top, and is 1.25rem tall.
+           A 1rem thumb centred inside it lives at
+             0.625rem + (1.25rem - 1rem)/2 = 0.75rem
+           which is what we use here. Without this fix the thumb
+           rendered ~6 px above the track. */
+        top: 0.75rem;
+        left: 0.125rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 9999px;
+        background: white;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+        transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+    }
+    .cfg-toggle .peer:checked ~ .cfg-toggle-thumb { transform: translateX(1rem); }
+    .cfg-toggle-label {
+        font-size: 0.875rem;
+        line-height: 1.4;
+        color: rgb(30 41 59);
+    }
+    html.dark .cfg-toggle-label { color: rgb(226 232 240); }
+    .cfg-toggle-hint {
+        display: block;
+        font-size: 0.6875rem;
+        color: rgb(100 116 139);
+        font-weight: 400;
+        margin-top: 0.125rem;
+    }
+</style>
 
 <script>
-let currentConfig = {};
+// ============================================================================
+// Theme toggle (shared with index.html)
+// ============================================================================
+(function () {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) {}
+    });
+})();
 
-// Load configuration on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadConfig();
-});
+if (window.lucide) window.lucide.createIcons();
+
+// ============================================================================
+// Toast notifications
+// ============================================================================
+function showAlert(message, type) {
+    const container = document.getElementById('alert-container');
+    const colorMap = {
+        success: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-500/10 dark:text-emerald-200',
+        danger:  'border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-700/50 dark:bg-rose-500/10 dark:text-rose-200',
+        warning: 'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700/50 dark:bg-amber-500/10 dark:text-amber-200'
+    };
+    const iconMap = { success: 'check-circle-2', danger: 'x-circle', warning: 'alert-triangle' };
+
+    const el = document.createElement('div');
+    el.className = `toast-anim flex items-start gap-2 rounded-xl border px-4 py-3 text-sm shadow-lg ${colorMap[type] || colorMap.success}`;
+    el.innerHTML = `
+        <i data-lucide="${iconMap[type] || 'info'}" class="h-4 w-4 mt-0.5 shrink-0"></i>
+        <span class="flex-1">${message}</span>
+        <button type="button" class="text-current/60 hover:text-current transition-colors" aria-label="Close">
+            <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+    `;
+    el.querySelector('button').addEventListener('click', () => el.remove());
+    container.appendChild(el);
+    if (window.lucide) window.lucide.createIcons();
+
+    setTimeout(() => {
+        el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(20px)';
+        setTimeout(() => el.remove(), 400);
+    }, 5000);
+}
+
+// ============================================================================
+// Config load / save
+// ============================================================================
+let currentConfig = {};
 
 function loadConfig() {
     axios.get('/get_config')
@@ -431,103 +773,128 @@ function loadConfig() {
             if (response.data.status === 'ok') {
                 currentConfig = response.data.config;
                 populateForm(currentConfig);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('settings-form').style.display = 'block';
-                document.getElementById('save-btn').style.display = 'block';
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('settings-form').classList.remove('hidden');
+                document.getElementById('save-bar').classList.remove('hidden');
+                if (window.lucide) window.lucide.createIcons();
             } else {
                 showAlert('Error loading configuration: ' + response.data.msg, 'danger');
             }
         })
         .catch(error => {
+            document.getElementById('loading').classList.add('hidden');
             showAlert('Failed to load configuration: ' + error.message, 'danger');
         });
 }
 
+// Fields stored as YAML lists; rendered as comma-separated text.
+const LIST_INT_FIELDS = new Set(['quality-preference-chain']);
+
 function populateForm(config) {
-    // Populate all form fields with config values
     Object.keys(config).forEach(key => {
-        const element = document.getElementById(key);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = config[key];
-            } else {
-                element.value = config[key] || '';
-            }
+        const el = document.getElementById(key);
+        if (!el) return;
+        if (el.type === 'checkbox') {
+            el.checked = !!config[key];
+        } else if (LIST_INT_FIELDS.has(key) && Array.isArray(config[key])) {
+            el.value = config[key].join(', ');
+        } else {
+            el.value = config[key] != null ? config[key] : '';
         }
     });
 }
 
 function collectFormData() {
     const formData = {};
-    
-    // Define fields that should be integers
-    const integerFields = new Set([
-        'alac-max', 'atmos-max', 'limit-max', 'max-memory-limit', 'mv-max'
-    ]);
-    
-    // Get all form elements
+    const integerFields = new Set(['alac-max', 'atmos-max', 'limit-max', 'max-memory-limit', 'mv-max']);
     const form = document.getElementById('settings-form');
     const inputs = form.querySelectorAll('input, select');
-    
+
     inputs.forEach(input => {
         const key = input.id;
-        if (key) {
-            if (input.type === 'checkbox') {
-                formData[key] = input.checked;
-            } else if (input.type === 'number' || integerFields.has(key)) {
-                // Ensure integer fields are saved as numbers, not strings
-                const numValue = parseInt(input.value);
-                formData[key] = isNaN(numValue) ? 0 : numValue;
-            } else {
-                formData[key] = input.value || '';
-            }
+        if (!key) return;
+        if (input.type === 'checkbox') {
+            formData[key] = input.checked;
+        } else if (input.type === 'number' || integerFields.has(key)) {
+            const num = parseInt(input.value, 10);
+            formData[key] = Number.isNaN(num) ? 0 : num;
+        } else {
+            formData[key] = input.value || '';
         }
     });
-    
+
     return formData;
 }
 
 function saveConfig() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
     const formData = collectFormData();
-    
-    axios.post('/save_config', formData, {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (response.data.status === 'ok') {
-            showAlert('Settings saved successfully!', 'success');
-        } else {
-            showAlert('Error saving settings: ' + response.data.msg, 'danger');
-        }
-    })
-    .catch(error => {
-        showAlert('Failed to save settings: ' + error.message, 'danger');
-    });
+    axios.post('/save_config', formData, { headers: { 'Content-Type': 'application/json' } })
+        .then(response => {
+            if (response.data.status === 'ok') {
+                showAlert('Settings saved successfully', 'success');
+            } else {
+                showAlert('Error saving settings: ' + response.data.msg, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Failed to save settings: ' + error.message, 'danger');
+        })
+        .finally(() => { btn.disabled = false; });
 }
 
-function showAlert(message, type) {
-    const alertContainer = document.getElementById('alert-container');
-    const alertElement = document.createElement('div');
-    alertElement.className = `alert alert-${type} alert-dismissible fade show`;
-    alertElement.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    alertContainer.appendChild(alertElement);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (alertElement.parentNode) {
-            alertElement.remove();
-        }
-    }, 5000);
-}
-
-// Save button event listener
 document.getElementById('save-btn').addEventListener('click', saveConfig);
+document.addEventListener('DOMContentLoaded', loadConfig);
+
+// ============================================================================
+// Media User Token guide — clipboard copy button.
+// Modern browsers gate navigator.clipboard.writeText on a user gesture, so
+// this lives behind a click. Falls back to a hidden textarea + execCommand
+// for older Safari and for pages served over plain http (the API is HTTPS-
+// gated there).
+// ============================================================================
+(function initMutCopy() {
+    const btn = document.getElementById('mut-copy');
+    const pre = document.getElementById('mut-snippet');
+    if (!btn || !pre) return;
+    btn.addEventListener('click', async () => {
+        const text = pre.textContent.trim();
+        let ok = false;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                ok = true;
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+        } catch { ok = false; }
+        const original = btn.innerHTML;
+        btn.innerHTML = ok
+            ? '<i data-lucide="check" class="h-3 w-3"></i> Copied'
+            : '<i data-lucide="alert-triangle" class="h-3 w-3"></i> Copy failed';
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(() => {
+            btn.innerHTML = original;
+            if (window.lucide) window.lucide.createIcons();
+        }, 1800);
+    });
+})();
+
+// Keyboard shortcut: Ctrl/Cmd + S
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveConfig();
+    }
+});
 </script>
 
 </body>

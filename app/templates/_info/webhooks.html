@@ -1,0 +1,52 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        Hooking up Plex / Jellyfin / Discord / ntfy
+    </summary>
+    <div class="mt-3 space-y-4 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+
+        <p class="text-[12px] text-slate-500 dark:text-slate-400">
+            Both fields are optional. Leave blank to disable that hook. Both fire only on a successful download (failed jobs never trigger them).
+        </p>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Library Scan URL (HTTP GET)</h4>
+            <p>Hit once per successful job. Use this to rescan your media library so newly-downloaded tracks appear without manual intervention.</p>
+            <ul class="ml-5 mt-1 list-disc space-y-1">
+                <li><strong>Plex:</strong>
+                    <code class="font-mono text-[11px] break-all">http://&lt;plex-host&gt;:32400/library/sections/&lt;sectionId&gt;/refresh?X-Plex-Token=&lt;your-token&gt;</code>
+                </li>
+                <li><strong>Jellyfin:</strong>
+                    <code class="font-mono text-[11px] break-all">http://&lt;jellyfin-host&gt;:8096/Library/Refresh?api_key=&lt;api-key&gt;</code>
+                </li>
+                <li><strong>Emby:</strong> identical to Jellyfin (<code class="font-mono">/Library/Refresh</code>).</li>
+                <li><strong>Navidrome:</strong>
+                    <code class="font-mono text-[11px] break-all">http://&lt;host&gt;:4533/api/scan?api_key=&lt;key&gt;</code>
+                </li>
+            </ul>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Completion Webhook (JSON POST)</h4>
+            <p>Receives a JSON body so you get a notification (or pipe events into automations). Body shape:</p>
+            <pre class="mt-1 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] font-mono text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">{
+  "url": "https://music.apple.com/us/album/&hellip;",
+  "format": "ALAC",
+  "quality": "ALAC 48 kHz / 24-bit",
+  "save_folder": "/srv/music/AM-DL downloads/&hellip;",
+  "duration_seconds": 47.2,
+  "title": "Album Name",
+  "artist": "Artist Name"
+}</pre>
+            <ul class="ml-5 mt-2 list-disc space-y-1">
+                <li><strong>Discord:</strong> the bare webhook URL works as-is (Discord ignores unknown fields). For nicer formatting, run it through your own relay.</li>
+                <li><strong>ntfy.sh:</strong> use a topic URL like <code class="font-mono">https://ntfy.sh/your-topic</code>. Body lands as the notification text.</li>
+                <li><strong>Home Assistant / Node-RED:</strong> point at your webhook trigger; parse the JSON in the flow.</li>
+            </ul>
+        </div>
+
+        <p class="text-[11.5px] text-slate-500 dark:text-slate-400">
+            Both endpoints are called with a 5-second timeout and a single retry. They are <strong>fire-and-forget</strong> — a webhook outage never blocks the queue.
+        </p>
+    </div>
+</details>

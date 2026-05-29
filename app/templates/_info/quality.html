@@ -1,0 +1,73 @@
+<details class="border-t border-slate-200 px-5 py-3 dark:border-slate-800 group">
+    <summary class="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+        <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform group-open:rotate-90"></i>
+        What do AAC-LC, ALAC, Atmos actually deliver?
+    </summary>
+    <div class="mt-3 space-y-4 text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300">
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">AAC variants — when to pick which</h4>
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-[12px]">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 text-left text-slate-600 dark:text-slate-400">
+                        <tr>
+                            <th class="px-3 py-2 font-medium">Variant</th>
+                            <th class="px-3 py-2 font-medium">Bitrate</th>
+                            <th class="px-3 py-2 font-medium">~MB/album</th>
+                            <th class="px-3 py-2 font-medium">Use it for</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr><td class="px-3 py-2 font-mono">aac-lc</td><td class="px-3 py-2">256 kbps CBR</td><td class="px-3 py-2">~90 MB</td><td class="px-3 py-2">Default. Apple Music's stock catalog tier; transparent to most listeners on most gear.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">aac</td><td class="px-3 py-2">256 kbps VBR</td><td class="px-3 py-2">~80&ndash;100 MB</td><td class="px-3 py-2">Slightly more efficient encoder; sounds the same as AAC-LC, file size varies with content.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">aac-binaural</td><td class="px-3 py-2">256 kbps</td><td class="px-3 py-2">~90 MB</td><td class="px-3 py-2">Headphone-only mix derived from Atmos. Sounds &quot;wider&quot; on wired earbuds; weird on speakers.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">aac-downmix</td><td class="px-3 py-2">256 kbps</td><td class="px-3 py-2">~90 MB</td><td class="px-3 py-2">Stereo downmix of Atmos. Use when you want the Atmos mix &quot;flattened&quot; for non-Atmos gear.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400">
+                AAC-LC requires a valid Media User Token. The other three are derived tiers and can fail with <em>Unavailable</em> on tracks Apple doesn't serve in that form &mdash; the queue will fall through your format chain in that case.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">ALAC sample-rate caps &mdash; is 192 kHz worth it?</h4>
+            <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+                <table class="w-full text-[12px]">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 text-left text-slate-600 dark:text-slate-400">
+                        <tr>
+                            <th class="px-3 py-2 font-medium">Cap</th>
+                            <th class="px-3 py-2 font-medium">Typical bitrate</th>
+                            <th class="px-3 py-2 font-medium">~MB/album</th>
+                            <th class="px-3 py-2 font-medium">Realistically audible on…</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr><td class="px-3 py-2 font-mono">44.1 kHz / 16-bit</td><td class="px-3 py-2">~950 kbps</td><td class="px-3 py-2">~330 MB</td><td class="px-3 py-2">Any setup. CD-quality. Indistinguishable from higher tiers on phones, AirPods, BT speakers.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">48 kHz / 24-bit</td><td class="px-3 py-2">~1.5 Mbps</td><td class="px-3 py-2">~520 MB</td><td class="px-3 py-2"><strong>Recommended default.</strong> Same audible spectrum as 44.1, but 24-bit gives quieter noise floor on a real DAC + headphones.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">96 kHz / 24-bit</td><td class="px-3 py-2">~3 Mbps</td><td class="px-3 py-2">~1.0 GB</td><td class="px-3 py-2">Studio monitors / IEMs above ~&euro;500 + external DAC. Differences are measurement-grade, not casual-listen-grade.</td></tr>
+                        <tr><td class="px-3 py-2 font-mono">192 kHz / 24-bit</td><td class="px-3 py-2">~6 Mbps</td><td class="px-3 py-2">~2.0 GB</td><td class="px-3 py-2">Archival only. Humans top out at ~20 kHz; 192 kHz captures content above 48 kHz, which only matters for downsampling math, not ears.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-2 text-[11.5px] text-slate-500 dark:text-slate-400">
+                <strong>Rule of thumb:</strong> 48 kHz / 24-bit is the sweet spot for everyone who isn't a mastering engineer. Bump to 96/192 only if you have the gear and the disk; the file is twice as big for ear-untraceable headroom.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Atmos bitrates</h4>
+            <p>
+                Apple serves Dolby Atmos as a Joint-Object-Coded (JOC) stream. <strong>2768 kbps</strong> is the highest tier available and what you want for an actual Atmos setup or Atmos-aware headphones. <strong>2448 kbps</strong> is the fallback when 2768 isn't published for that release. Most albums don't have Atmos at all &mdash; the queue will fall back to your next format chain entry in that case.
+            </p>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-slate-900 dark:text-slate-100 text-[13px] mb-1">Download Limit</h4>
+            <p>
+                Maximum number of tracks in a single album / playlist job. Bigger albums get truncated, not failed. Keep at <code class="font-mono">200</code> unless you regularly hit larger compilations.
+            </p>
+        </div>
+
+    </div>
+</details>
