@@ -223,10 +223,9 @@ If you are on Fedora, Arch, openSUSE, Alpine, or another non-apt distribution, t
 
 ### 3. Clone the repository
 
-Replace `username` with the real GitHub account after you upload it.
 
 ```bash
-git clone https://github.com/username/apple-music-downloader-webui.git
+git clone https://github.com/losslessbitlab/apple-music-downloader-webui.git
 cd apple-music-downloader-webui
 ```
 
